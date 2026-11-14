@@ -2,7 +2,11 @@
     x:Class="Flock.Tray.Settings.GeneralPane"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:controls="using:Flock.Tray.Controls">
+    xmlns:controls="using:Flock.Tray.Controls"
+    xmlns:settings="using:Flock.Tray.Settings">
+    <UserControl.Resources>
+        <settings:InverseBooleanVisibilityConverter x:Key="InverseBooleanVisibilityConverter" />
+    </UserControl.Resources>
     <StackPanel Spacing="0">
         <StackPanel Spacing="4" Margin="0,0,0,24">
             <TextBlock Text="Daemon" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="1,0,0,6" />
@@ -99,7 +103,24 @@
         </StackPanel>
         <StackPanel Spacing="4" Margin="0,0,0,24">
             <TextBlock Text="Updates" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="1,0,0,6" />
-            <StackPanel x:Name="UpdateHost" Spacing="4" />
+            <Border Style="{StaticResource CardStyle}" Visibility="{Binding UpdateVisibility}">
+                <Grid Style="{StaticResource SettingRowStyle}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="1">
+                        <TextBlock Text="Flock" />
+                        <TextBlock Text="{Binding UpdateDescription}" Style="{StaticResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <ProgressRing Width="16" Height="16" IsActive="{Binding IsUpdateBusy}" Visibility="{Binding UpdateProgressVisibility}" />
+                        <HyperlinkButton Content="Release Notes" Padding="4,2" Click="ReleaseNotesClicked"
+                                         Visibility="{Binding ReleaseNotesVisibility}" />
+                        <Button Content="{Binding UpdateActionText}" Command="{Binding UpdateCommand}" Style="{StaticResource AccentButtonStyle}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
             <Border Style="{StaticResource CardStyle}" Visibility="{Binding ConfigVisibility}">
                 <Grid Style="{StaticResource SettingRowStyle}">
                     <Grid.ColumnDefinitions>
@@ -122,9 +143,11 @@
             <TextBlock Text="Project folders" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="1,0,0,6" />
             <Border Style="{StaticResource CardStyle}" Padding="8">
                 <StackPanel Spacing="4">
-                    <TextBlock x:Name="NoParked" Text="No project folders" Visibility="Collapsed" Style="{StaticResource CaptionTextBlockStyle}"
+                    <TextBlock Text="No project folders" Visibility="{Binding HasParked, Converter={StaticResource InverseBooleanVisibilityConverter}}"
+                               Style="{StaticResource CaptionTextBlockStyle}"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                    <ListView x:Name="Parked" ItemsSource="{Binding Config.Parked}" SelectionChanged="ParkedSelectionChanged" SelectionMode="Single" MinHeight="60">
+                    <ListView x:Name="Parked" ItemsSource="{Binding Config.Parked}" SelectedItem="{Binding SelectedParked, Mode=TwoWay}" SelectionMode="Single"
+                              MinHeight="60">
                         <ListView.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal" Spacing="10">
@@ -136,7 +159,7 @@
                     </ListView>
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <Button x:Name="AddParked" Content="Add project folders…" Click="AddParkedClicked" />
-                        <Button x:Name="RemoveParked" Content="Remove" Click="RemoveParkedClicked" IsEnabled="False" />
+                        <Button Content="Remove" Click="RemoveParkedClicked" IsEnabled="{Binding HasSelectedParked}" />
                     </StackPanel>
                 </StackPanel>
             </Border>

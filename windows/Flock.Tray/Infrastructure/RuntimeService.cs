@@ -63,7 +63,7 @@ public sealed class RuntimeService
         Postgres.OnChange = RefreshAfterServiceVersionMutationAsync;
         Catalog.OnChange = RefreshAfterServiceVersionMutationAsync;
         Sites.Changed += NotifyChanged;
-        UpdateService.Changed += NotifyChanged;
+        UpdateService.Changed += NotifyUpdateChanged;
         Dumps.OnCaptureChanged = RefreshAsync;
         statusPolling.StatusPublished = ApplyPublished;
         operations.RunningChanged += OperationRunningChanged;
@@ -127,8 +127,10 @@ public sealed class RuntimeService
     public McpService Mcp { get; }
     public SitesService Sites { get; }
     public event Action? Changed;
+    public event Action? UpdateChanged;
 
     public void NotifyChanged() => Changed?.Invoke();
+    private void NotifyUpdateChanged() => UpdateChanged?.Invoke();
 
     public async Task UpdateInstallationAsync()
     {
