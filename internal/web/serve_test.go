@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io"
+	"math/rand/v2"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -27,31 +28,48 @@ var (
 
 // freePort returns a port that's free for TCP and UDP: Caddy also listens for HTTP/3 over
 // UDP, and Windows can reserve a port for UDP that's free for TCP. It never returns a port twice,
-// though the OS can hand a closed port out again.
+// though the OS can hand a closed port out again. It tries the port the OS picks first, then
+// random ones: Windows picks ports in sequence and reserves them for UDP in blocks, so once one
+// is taken for UDP the next ones often are too.
 func freePort(t *testing.T) int {
 	t.Helper()
 	givenMu.Lock()
 	defer givenMu.Unlock()
-	for range 100 {
-		ln, err := net.Listen("tcp", "127.0.0.1:0")
-		if err != nil {
-			t.Fatal(err)
-		}
-		port := ln.Addr().(*net.TCPAddr).Port
-		if given[port] {
+	for try := range 200 {
+		port := 0
+		if try == 0 {
+			ln, err := net.Listen("tcp", "127.0.0.1:0")
+			if err != nil {
+				t.Fatal(err)
+			}
+			port = ln.Addr().(*net.TCPAddr).Port
 			ln.Close()
-			continue
+		} else {
+			// Below the OS's own range (49152 and up on Windows), above Flock's (21000 and up).
+			port = 30000 + rand.IntN(15000)
 		}
-		pc, err := net.ListenPacket("udp", fmt.Sprintf("127.0.0.1:%d", port))
-		ln.Close()
-		if err == nil {
-			pc.Close()
+		if !given[port] && freeForBoth(port) {
 			given[port] = true
 			return port
 		}
 	}
 	t.Fatal("no port is free for both TCP and UDP")
 	return 0
+}
+
+// freeForBoth reports whether a port is free for TCP and UDP on the loopback address.
+func freeForBoth(port int) bool {
+	ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	if err != nil {
+		return false
+	}
+	defer ln.Close()
+	pc, err := net.ListenPacket("udp", fmt.Sprintf("127.0.0.1:%d", port))
+	if err != nil {
+		return false
+	}
+	pc.Close()
+	return true
 }
 
 func nonLoopbackIPv4(t *testing.T) string {
