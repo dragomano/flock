@@ -41,8 +41,8 @@ func Spec(root string, s Site) supervisor.Spec {
 	return supervisor.Spec{
 		Name: name,
 		Path: php.Binary(root, s.Minor),
-		// --hostname: given the site's name (REVERB_HOST), Reverb serves TLS itself when Herd or
-		// Valet has a certificate for it, but the web server speaks plain HTTP to it.
+		// --hostname: given the site's name (REVERB_HOST), Reverb serves TLS itself when another
+		// local tool has a certificate for it, but the web server speaks plain HTTP to it.
 		Args:       []string{"artisan", "reverb:start", "--host=127.0.0.1", "--port=" + strconv.Itoa(s.Port), "--hostname=127.0.0.1", "--no-interaction"},
 		Env:        env,
 		Dir:        s.Path,
