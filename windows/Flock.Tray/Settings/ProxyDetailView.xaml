@@ -57,11 +57,16 @@
                     <ToggleSwitch IsOn="{Binding Secured, Mode=TwoWay}" MinWidth="0" AutomationProperties.Name="{l:Loc Key=Common_Https}" />
                 </settings:DetailField>
                 <settings:DetailField Label="{l:Loc Key=Sites_Upstream}" LabelAlignment="Top">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
+                    <!-- Change keeps its place in the smallest window: a long upstream is trimmed (its tooltip shows it whole). -->
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
                         <TextBlock Text="{Binding Upstream}" FontFamily="{StaticResource MonoFont}" FontSize="13" IsTextSelectionEnabled="True"
-                                   TextWrapping="NoWrap" VerticalAlignment="Center" />
-                        <Button Content="{l:Loc Key=Sites_Change}" Command="{Binding ChangeUpstreamCommand}" VerticalAlignment="Center" />
-                    </StackPanel>
+                                   TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                                   ToolTipService.ToolTip="{Binding Upstream}" />
+                        <Button Grid.Column="1" Content="{l:Loc Key=Sites_Change}" Command="{Binding ChangeUpstreamCommand}" VerticalAlignment="Center" />
+                    </Grid>
                 </settings:DetailField>
                 <TextBlock Text="{Binding Note}" Style="{StaticResource DetailNoteStyle}" />
             </StackPanel>
