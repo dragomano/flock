@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -201,6 +203,12 @@ func readObject(path string) (map[string]json.RawMessage, error) {
 		}
 		object[key] = value
 	}
+	if token, err := decoder.Token(); err != nil || token != json.Delim('}') {
+		return nil, fmt.Errorf("%s: the object doesn't end with }", path)
+	}
+	if _, err := decoder.Token(); !errors.Is(err, io.EOF) {
+		return nil, fmt.Errorf("%s: something follows the object", path)
+	}
 	return object, nil
 }
 
@@ -363,9 +371,12 @@ func (c *Catalog) validate() []string {
 			report("no English text")
 		}
 		for _, text := range []string{e.Text, e.One} {
-			if strings.ContainsAny(placeholder.ReplaceAllString(text, ""), "{}") {
+			if strayBrace(text) {
 				report("a brace that isn't a {placeholder} in %q", text)
 			}
+		}
+		if strings.HasPrefix(e.Key, "installer.") && strings.ContainsAny(e.Text+e.Note, "\r\n") {
+			report("installer messages and their notes are one line")
 		}
 		if e.Plural() {
 			for name := range nameSet(e.One) {
@@ -416,9 +427,23 @@ func (c *Catalog) validate() []string {
 	return problems
 }
 
+// A brace outside a {placeholder}: string.Format on Windows fails on one.
+func strayBrace(text string) bool {
+	return strings.ContainsAny(placeholder.ReplaceAllString(text, ""), "{}")
+}
+
 // What's wrong with a translation of the entry.
 func (e *Entry) checkText(language Language, platform string, text *Text) []string {
 	var problems []string
+	for _, value := range append(slices.Collect(maps.Values(text.Forms)), text.Plain) {
+		if strayBrace(value) {
+			problems = append(problems, fmt.Sprintf("a brace that isn't a {placeholder} in %q", value))
+		}
+		// A line of its own in Strings.iss would be read as the installer's script.
+		if strings.HasPrefix(e.Key, "installer.") && strings.ContainsAny(value, "\r\n") {
+			problems = append(problems, fmt.Sprintf("installer messages are one line: %q", value))
+		}
+	}
 	if !e.Plural() {
 		if text.Forms != nil {
 			return []string{"plural forms for a text without them"}

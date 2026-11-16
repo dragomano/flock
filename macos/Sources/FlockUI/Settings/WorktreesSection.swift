@@ -99,7 +99,9 @@ struct WorktreeDetail: View {
                     Button(parent, action: selectParent).buttonStyle(.link)
                 }
                 field("versions.versions") {
-                    Text(worktree.isNode ? "common.nodejs_version \(worktree.node ?? "")" : "common.php_version \(worktree.php)" + (worktree.node.map { " · Node.js \($0)" } ?? ""))
+                    Text(worktree.isNode
+                         ? String(localized: "common.nodejs_version \(worktree.node ?? "")")
+                         : String(localized: "common.php_version \(worktree.php)") + (worktree.node.map { " · " + String(localized: "common.nodejs_version \($0)") } ?? ""))
                 }
                 Text(worktree.isNode
                      ? "worktrees.uses_site_s_settings_node \(parent) \(parent)"

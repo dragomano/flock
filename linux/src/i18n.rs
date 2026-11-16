@@ -109,11 +109,9 @@ pub fn resolve(preference: &str, env: impl Fn(&str) -> Option<String>) -> &'stat
     if locale.is_empty() || primary(&locale) == "c" || primary(&locale) == "posix" {
         return "en";
     }
-    let list = env("LANGUAGE").unwrap_or_default();
-    list.split(':')
-        .chain([locale.as_str()])
-        .find_map(|tag| LANGUAGES.iter().find(|(code, _)| *code == primary(tag)).map(|(code, _)| *code))
-        .unwrap_or("en")
+    // A LANGUAGE list stands in for the locale's language, it doesn't come before it.
+    let list = env("LANGUAGE").filter(|list| !list.is_empty()).unwrap_or(locale);
+    list.split(':').find_map(|tag| LANGUAGES.iter().find(|(code, _)| *code == primary(tag)).map(|(code, _)| *code)).unwrap_or("en")
 }
 
 fn catalog(language: &str) -> Option<Catalog> {
@@ -564,6 +562,8 @@ mod tests {
         assert_eq!(resolve("", env(&[("LANG", "es_MX.UTF-8")])), "es");
         assert_eq!(resolve("system", env(&[("LANG", "de_DE.UTF-8")])), "en");
         assert_eq!(resolve("system", env(&[("LANGUAGE", "de:es:cs"), ("LANG", "de_DE.UTF-8")])), "es");
+        assert_eq!(resolve("system", env(&[("LANGUAGE", "de"), ("LANG", "cs_CZ.UTF-8")])), "en");
+        assert_eq!(resolve("system", env(&[("LANGUAGE", ""), ("LANG", "cs_CZ.UTF-8")])), "cs");
         assert_eq!(resolve("system", env(&[("LC_ALL", "cs_CZ.UTF-8"), ("LANG", "es_ES.UTF-8")])), "cs");
         assert_eq!(resolve("system", env(&[("LC_MESSAGES", "es_ES.UTF-8"), ("LANG", "cs_CZ.UTF-8")])), "es");
         // A C locale ignores LANGUAGE, as gettext does.
