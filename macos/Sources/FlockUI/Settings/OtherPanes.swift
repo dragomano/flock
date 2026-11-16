@@ -230,7 +230,7 @@ struct AboutPane: View {
     /// A blank GitHub issue with the versions filled in, so reports say what they run on.
     private var issueURL: URL {
         var components = URLComponents(string: "https://github.com/flock-php/flock/issues/new")!
-        let body = "\n\n---\nApp: \(Updater.appVersion)\nDaemon: \(model.status?.version ?? "about.daemon_not_running")\nOS: macOS \(ProcessInfo.processInfo.operatingSystemVersionString)\n"
+        let body = "\n\n---\nApp: \(Updater.appVersion)\nDaemon: \(model.status?.version ?? "not running")\nOS: macOS \(ProcessInfo.processInfo.operatingSystemVersionString)\n"
         components.queryItems = [URLQueryItem(name: "body", value: body)]
         return components.url!
     }

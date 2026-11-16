@@ -483,7 +483,7 @@ private struct ProxyRow: View {
         }
         .buttonStyle(.plain)
         .disabled(proxy.url == nil)
-        .help(proxy.running ? "common.from_to \(proxy.url ?? proxy.domain) \(proxy.upstream)" : String(localized: "sites.proxy.nothing_answers \(proxy.upstream)"))
+        .help(proxy.running ? String(localized: "common.from_to \(proxy.url ?? proxy.domain) \(proxy.upstream)") : String(localized: "sites.proxy.nothing_answers \(proxy.upstream)"))
         .background(isHovered ? Color.primary.opacity(0.08) : .clear, in: RoundedRectangle(cornerRadius: 5))
         .onHover { isHovered = $0 }
     }

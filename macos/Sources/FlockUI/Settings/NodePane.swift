@@ -154,7 +154,7 @@ private struct NodeReleaseRow: View {
             }
 
             Spacer(minLength: 12)
-            // The buttons keep their whole titles (longer in Czech and Spanish); the version wraps.
+            // The buttons keep their whole titles (longer in Czech and Spanish).
             actions
                 .fixedSize()
                 .disabled(step != nil)
