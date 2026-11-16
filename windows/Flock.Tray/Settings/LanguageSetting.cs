@@ -37,9 +37,10 @@ internal static class LanguageSetting
         void UpdateNote() =>
             note.Visibility = AppLanguage.Resolve(preferences.Snapshot.Language) != AppLanguage.Current ? Visibility.Visible : Visibility.Collapsed;
 
+        var restoring = false;
         picker.SelectionChanged += async (_, _) =>
         {
-            if (picker.SelectedIndex < 0)
+            if (restoring || picker.SelectedIndex < 0)
             {
                 return;
             }
@@ -50,7 +51,11 @@ internal static class LanguageSetting
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or OperationCanceledException)
             {
-                // PreferencesService reports a failed save (Error), which Settings shows.
+                // PreferencesService reports a failed save (Error), which Settings shows. The picker
+                // goes back to the saved language, so the same choice can be made again.
+                restoring = true;
+                picker.SelectedIndex = Math.Max(0, Array.IndexOf(Choices, preferences.Snapshot.Language));
+                restoring = false;
             }
             UpdateNote();
         };

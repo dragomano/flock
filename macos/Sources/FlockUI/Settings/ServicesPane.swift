@@ -14,7 +14,7 @@ struct ServicesPane: View {
         nonmutating set { confirmStopState.wrappedValue = newValue }
     }
 
-    private static let categoryOrder = ["Core", "worktrees.new.database", "services.category.cache_queue", "services.category.search", "services.category.storage", "services.category.mail", "services.category.debugging"]
+    private static let categoryOrder = ["Core", "Database", "Cache & Queue", "Search", "Storage", "Mail", "Debugging"]
 
     var body: some View {
         let store = model.settings

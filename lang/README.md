@@ -8,8 +8,8 @@ Nothing else is needed to translate Flock.
 
 ## Translating
 
-1. Fork the repository and edit `lang/<code>/app.json`, or copy `en/app.json` to a new folder for a
-   new language (`lang/de/app.json` for German).
+1. Fork the repository and edit `lang/<code>/app.json`. For a new language, start a new folder
+   with an `app.json` that holds only `{}` (`lang/de/app.json` for German) and add its texts.
 2. Run `make i18n` (or `go run ./tools/i18n`). It checks your file, puts it in order and writes the
    apps' own files from it.
 3. Open a pull request. A pull request that changes only translations needs no issue first.
