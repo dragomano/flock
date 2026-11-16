@@ -106,6 +106,11 @@ internal sealed partial class OutputViewModel(SitesService sites, Action<string>
         if (Log is { } name && await sites.ClearServiceLogAsync(name) && name == Log)
         {
             Text = Empty;
+            // A read started before the clear would bring the old output back: read again instead.
+            if (polling is not null)
+            {
+                Restart();
+            }
         }
     }
 

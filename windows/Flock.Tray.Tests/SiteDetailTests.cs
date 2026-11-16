@@ -384,6 +384,21 @@ public sealed class SiteDetailTests : IDisposable
         Assert.False(output.IsPolling);
     }
 
+    [Fact]
+    public async Task AReadFromBeforeAClearDoesntBringTheOutputBack()
+    {
+        handler.Log = "old output";
+        handler.HoldReads = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        output.Show("reverb-shop", isLive: false);
+        await handler.LogRead.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        await output.ClearCommand.ExecuteAsync(null);
+        handler.HoldReads.SetResult();
+
+        await Task.Delay(200);
+        Assert.Equal(OutputViewModel.Empty, output.Text);
+    }
+
     private static async Task WaitFor(Func<bool> condition)
     {
         for (var attempt = 0; attempt < 100 && !condition(); attempt++)
@@ -498,14 +513,27 @@ public sealed class SiteDetailTests : IDisposable
         public string Log { get; set; } = "";
         public TaskCompletionSource LogRead { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        /// <summary>When set, a log read answers (with the log as it was when asked) only once it completes.</summary>
+        public TaskCompletionSource? HoldReads { get; set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             if (request.RequestUri!.AbsolutePath.StartsWith("/v1/logs/services/", StringComparison.Ordinal))
             {
+                if (request.Method == HttpMethod.Delete)
+                {
+                    Log = "";
+                    return new HttpResponseMessage(HttpStatusCode.NoContent);
+                }
+                var log = Log;
                 LogRead.TrySetResult();
-                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(Log) });
+                if (HoldReads is { } hold)
+                {
+                    await hold.Task.WaitAsync(cancellationToken);
+                }
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(log) };
             }
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{}") });
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{}") };
         }
     }
 }
