@@ -1,29 +1,28 @@
 using System.Collections.ObjectModel;
-using System.Globalization;
-using System.Text.Json;
-using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Flock.Kit;
 using Flock.Tray.Infrastructure;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
+
 namespace Flock.Tray.ViewModels;
 
 /// <summary>Retained panel state and commands projected from the application model.</summary>
-public sealed partial class PanelViewModel : ObservableObject, IDisposable
+public sealed class PanelViewModel : ObservableObject, IDisposable
 {
-    private readonly DaemonSwitch dumps;
-    private readonly CollectionSynchronizer<string, PanelProxyRow> proxySynchronizer = new();
-    private readonly CollectionSynchronizer<string, PanelServiceRow> serviceSynchronizer = new();
+    private readonly RuntimeService model;
     private readonly CollectionSynchronizer<string, PanelSiteRow> siteSynchronizer = new();
+    private readonly CollectionSynchronizer<string, PanelServiceRow> serviceSynchronizer = new();
+    private readonly CollectionSynchronizer<string, PanelProxyRow> proxySynchronizer = new();
     private readonly DaemonSwitch xdebug;
+    private readonly DaemonSwitch dumps;
     private HashSet<string>? expanded;
     private bool released;
 
     public PanelViewModel(RuntimeService model)
     {
-        this.Model = model;
+        this.model = model;
         xdebug = new DaemonSwitch(() => OnPropertyChanged(nameof(Xdebug)));
         dumps = new DaemonSwitch(() => OnPropertyChanged(nameof(Dumps)));
         model.Changed += ModelChanged;
@@ -42,9 +41,9 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         RefreshRows();
     }
 
-    public RuntimeService Model { get; }
-    public Status? Status => Model.Status;
-    public string? Error => Model.Error;
+    public RuntimeService Model => model;
+    public Status? Status => model.Status;
+    public string? Error => model.Error;
 
     /// <summary>The Xdebug switch, bound two-way: setting it asks the daemon, reading it follows the daemon.</summary>
     public bool Xdebug
@@ -71,24 +70,25 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
             }
         }
     }
-    public string? ActionError => Model.RuntimeError ?? Model.ActionError ?? Model.Dumps.ActionError;
-    public bool IsRunning => Model.IsRunning;
-    public bool IsDegraded => Model.IsDegraded;
-    public bool IsRestarting => Model.IsRestarting;
-    public bool IsUpdating => Model.IsUpdating;
-    public bool IsCaptureBusy => Model.Dumps.IsCaptureBusy;
-    public bool NeedsSetup => Model.NeedsSetup;
-    public string Headline => Model.Headline;
+    public string? ActionError => model.RuntimeError ?? model.ActionError ?? model.Dumps.ActionError;
+    public bool IsRunning => model.IsRunning;
+    public bool IsDegraded => model.IsDegraded;
+    public bool IsRestarting => model.IsRestarting;
+    public bool IsUpdating => model.IsUpdating;
+    public bool IsCaptureBusy => model.Dumps.IsCaptureBusy;
+    public bool NeedsSetup => model.NeedsSetup;
+    public string Headline => model.Headline;
     public string DisplayName => Application.Current is App app ? app.Options.Identity.DisplayName : "Flock";
-    public UpdateFeed.Item? AvailableUpdate => Model.UpdateService.Available;
+    public UpdateFeed.Item? AvailableUpdate => model.UpdateService.Available;
+    public Features.Update.UpdatePhase UpdateState => model.UpdateService.State;
     public bool HasStatusContent => Status is not null && !NeedsSetup;
     public bool HasSites => HasStatusContent && (Sites.Count > 0 || Proxies.Count > 0);
-    public string NotRunningMessage => Model.Error ?? "Flock is not running";
+    public string NotRunningMessage => model.Error ?? Strings.Common_FlockNotRunning;
     public bool HasActionError => ActionError is not null;
     public bool HasUpdate => AvailableUpdate is not null;
-    public bool IsUpdateBusy => Model.UpdateService.IsBusy;
+    public bool IsUpdateBusy => model.UpdateService.IsBusy;
     public bool CanInstallUpdate => HasUpdate && !IsUpdateBusy;
-    public string UpdateMessage => !IsUpdateBusy && AvailableUpdate is { } update ? $"Flock {update.Version} is available" : Model.UpdateService.Summary;
+    public string UpdateMessage => !IsUpdateBusy && AvailableUpdate is { } update ? Localization.Format(Strings.Menu_UpdateAvailable, update.Version) : model.UpdateService.Summary;
     public int MailCount => Status?.MailCount ?? 0;
     public int DumpCount => Status?.DumpCount ?? 0;
     public Visibility RestartVisibility => IsRestarting ? Visibility.Visible : Visibility.Collapsed;
@@ -122,36 +122,11 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
     public IRelayCommand OpenSettingsCommand { get; }
     public IRelayCommand QuitCommand { get; }
 
-    // Read once: the panel's own toggles are the newer state from then on.
-    private HashSet<string> Expanded => expanded ??= Model.Preferences.Snapshot.ExpandedSites
-        .Split('\n', StringSplitOptions.RemoveEmptyEntries).ToHashSet(StringComparer.Ordinal);
+    public Task SetDumpsAsync(bool enabled) => dumps.ChangeAsync(enabled, model.SetDumpsAsync);
 
-    public void Dispose()
-    {
-        if (released)
-        {
-            return;
-        }
-        released = true;
-        Model.Changed -= ModelChanged;
-        Model.UpdateChanged -= UpdateChanged;
-        Model.Dumps.Changed -= DumpsChanged;
-    }
+    public Task SetXdebugAsync(bool enabled) => xdebug.ChangeAsync(enabled, model.SetXdebugAsync);
 
-    public Task SetDumpsAsync(bool enabled)
-    {
-        return dumps.ChangeAsync(enabled, Model.SetDumpsAsync);
-    }
-
-    public Task SetXdebugAsync(bool enabled)
-    {
-        return xdebug.ChangeAsync(enabled, Model.SetXdebugAsync);
-    }
-
-    public void OpenSite(string url)
-    {
-        Model.Open(url);
-    }
+    public void OpenSite(string url) => model.Open(url);
 
     /// <summary>Shows or hides a site's worktrees under it, and remembers it in the preferences.</summary>
     public void ToggleWorktrees(string site)
@@ -173,13 +148,17 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         }
     }
 
+    // Read once: the panel's own toggles are the newer state from then on.
+    private HashSet<string> Expanded => expanded ??= model.Preferences.Snapshot.ExpandedSites
+        .Split('\n', StringSplitOptions.RemoveEmptyEntries).ToHashSet(StringComparer.Ordinal);
+
     private async Task SaveExpandedAsync(string value)
     {
         try
         {
-            await Model.Preferences.UpdateAsync(data => data with { ExpandedSites = value });
+            await model.Preferences.UpdateAsync(data => data with { ExpandedSites = value });
         }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or OperationCanceledException)
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or OperationCanceledException)
         {
             // PreferencesService reports a failed save (Error); the panel keeps the state until it quits.
         }
@@ -187,8 +166,20 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
 
     public void DismissError()
     {
-        Model.DismissError();
-        Model.Dumps.DismissError();
+        model.DismissError();
+        model.Dumps.DismissError();
+    }
+
+    public void Dispose()
+    {
+        if (released)
+        {
+            return;
+        }
+        released = true;
+        model.Changed -= ModelChanged;
+        model.UpdateChanged -= UpdateChanged;
+        model.Dumps.Changed -= DumpsChanged;
     }
 
     private void ModelChanged()
@@ -232,6 +223,19 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         ToggleDumpsCommand.NotifyCanExecuteChanged();
     }
 
+    // Update progress has its own event: on the shared one every download tick would redraw the whole panel.
+    private void UpdateChanged()
+    {
+        OnPropertyChanged(nameof(AvailableUpdate));
+        OnPropertyChanged(nameof(UpdateState));
+        OnPropertyChanged(nameof(HasUpdate));
+        OnPropertyChanged(nameof(IsUpdateBusy));
+        OnPropertyChanged(nameof(CanInstallUpdate));
+        OnPropertyChanged(nameof(UpdateMessage));
+        OnPropertyChanged(nameof(UpdateVisibility));
+        InstallUpdateCommand.NotifyCanExecuteChanged();
+    }
+
     private void DumpsChanged()
     {
         OnPropertyChanged(nameof(ActionError));
@@ -243,40 +247,20 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         ToggleDumpsCommand.NotifyCanExecuteChanged();
     }
 
-    private void UpdateChanged()
-    {
-        OnPropertyChanged(nameof(AvailableUpdate));
-        OnPropertyChanged(nameof(HasUpdate));
-        OnPropertyChanged(nameof(IsUpdateBusy));
-        OnPropertyChanged(nameof(CanInstallUpdate));
-        OnPropertyChanged(nameof(UpdateMessage));
-        OnPropertyChanged(nameof(UpdateVisibility));
-        InstallUpdateCommand.NotifyCanExecuteChanged();
-    }
-
     private void RefreshRows()
     {
-        var status = Model.Status;
-        List<PanelSiteValue> sites = [];
-        List<Status.Proxy> proxies = [];
-        List<PanelServiceValue> services = [];
-
-        if (status is not null)
-        {
-            // Worktrees are listed under their site, which shows them when it is expanded.
-            sites = status.Sites
-                .Where(site => !site.IsWorktree)
-                .Select(site => new PanelSiteValue(site, status.WorktreesOf(site.Name), Expanded.Contains(site.Name)))
-                .ToList();
-            proxies = status.Proxies;
-            services = BuildServices(status);
-        }
-
+        var status = model.Status;
+        // Worktrees are listed under their site, which shows them when it is expanded.
+        List<PanelSiteValue> sites = status is null ? [] : status.Sites.Where(site => !site.IsWorktree)
+            .Select(site => new PanelSiteValue(site, status.WorktreesOf(site.Name), Expanded.Contains(site.Name))).ToList();
         siteSynchronizer.Synchronize(Sites, sites, row => row.Domain, value => value.Site.Domain,
             value => new PanelSiteRow(value), (row, value) => row.Update(value));
+        List<Status.Proxy> proxies = status?.Proxies ?? [];
         proxySynchronizer.Synchronize(Proxies, proxies, row => row.Name, proxy => proxy.Name,
             proxy => new PanelProxyRow(proxy), (row, proxy) => row.Update(proxy));
-        serviceSynchronizer.Synchronize(Services, services, row => row.Id, row => row.Id,
+
+        List<PanelServiceValue> values = status is null ? [] : BuildServices(status);
+        serviceSynchronizer.Synchronize(Services, values, row => row.Id, row => row.Id,
             value => new PanelServiceRow(value), (row, value) => row.Update(value));
         OnPropertyChanged(nameof(HasSites));
     }
@@ -285,52 +269,50 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
     {
         var values = new List<PanelServiceValue>
         {
-            new("web", "Web", $"http :{status.HttpPort} · https :{status.HttpsPort}", true)
+            new("web", Strings.Menu_Web, $"http :{status.HttpPort} · https :{status.HttpsPort}", true),
         };
         if (status.Dns.Wildcard)
         {
-            values.Add(new PanelServiceValue("dns", "DNS", $"*.{status.Dns.Tld}", true));
+            values.Add(new("dns", "DNS", $"*.{status.Dns.Tld}", true));
         }
         else if (status.Dns.Tld.Length > 0)
         {
             var helperDown = status.Warnings.Any(w => w.Contains("hosts helper", StringComparison.Ordinal));
-            values.Add(new PanelServiceValue("hosts", "Hosts", "site domains only", !helperDown));
+            values.Add(new("hosts", "Hosts", Strings.Menu_SiteDomainsOnly, !helperDown));
         }
-        values.Add(new PanelServiceValue("mail", "Mail", status.Mail.Length == 0 ? "stopped" : $"smtp {status.Mail}", status.Mail.Length > 0));
+        values.Add(new("mail", Strings.Menu_Mail, status.Mail.Length == 0 ? Strings.Menu_Stopped : $"smtp {status.Mail}", status.Mail.Length > 0));
         if (status.Postgres is { } postgres)
         {
-            values.Add(new PanelServiceValue("postgres", "PostgreSQL", postgres, status.Processes.FirstOrDefault(p => p.Name == "postgres")?.Up ?? false));
+            values.Add(new("postgres", "PostgreSQL", postgres, status.Processes.FirstOrDefault(p => p.Name == "postgres")?.Up ?? false));
         }
         foreach (var extra in status.Extras)
         {
-            values.Add(new PanelServiceValue(extra.Name, extra.Name, extra.Enabled ? $"{extra.Version} on 127.0.0.1:{extra.Port}" : "stopped", extra.Up));
+            values.Add(new(extra.Name, extra.Name, extra.Enabled ? Localization.Format(Strings.Menu_VersionOnPort, extra.Version, extra.Port) : Strings.Menu_Stopped, extra.Up));
         }
         foreach (var pool in status.Processes.Where(p => p.Name.StartsWith("php", StringComparison.Ordinal)).GroupBy(p => PoolName(p.Name)))
         {
             var workers = pool.ToList();
             var up = workers.Count(worker => worker.Up);
             var detail = up == 0
-                ? workers.FirstOrDefault(worker => worker.LastError is not null)?.LastError ?? "down"
-                : workers.Count > 1
-                    ? $"{up} of {workers.Count} workers up"
-                    : "up";
+                ? workers.FirstOrDefault(worker => worker.LastError is not null)?.LastError ?? Strings.Menu_Down
+                : workers.Count > 1 ? Localization.Format(Strings.Menu_WorkersUp, up, workers.Count) : Strings.Menu_Up;
             var restarts = workers.Sum(worker => worker.Restarts);
             if (up > 0 && restarts > 0)
             {
-                detail += $" (restarted {restarts}×)";
+                detail += " " + Localization.Format(Strings.Menu_Restarted, restarts);
             }
             values.Add(new PanelServiceValue(pool.Key, pool.Key, detail, up > 0));
         }
         foreach (var process in status.Processes.Where(p => !p.Up && !p.Name.StartsWith("php", StringComparison.Ordinal)))
         {
-            values.Add(new PanelServiceValue("process:" + process.Name, process.Name, process.LastError ?? "down", false));
+            values.Add(new PanelServiceValue("process:" + process.Name, process.Name, process.LastError ?? Strings.Menu_Down, false));
         }
         return values;
     }
 
     private static string PoolName(string process)
     {
-        var match = Regex.Match(process, @"^php(\d+\.\d+)-(?:cgi|fpm)");
+        var match = System.Text.RegularExpressions.Regex.Match(process, @"^php(\d+\.\d+)-(?:cgi|fpm)");
         return match.Success ? $"PHP {match.Groups[1].Value}" : process;
     }
 }
@@ -348,9 +330,9 @@ public sealed class PanelSiteRow(PanelSiteValue value) : ObservableObject
     public List<PanelWorktreeRow> Worktrees => Expanded ? entry.Worktrees.Select(worktree => new PanelWorktreeRow(worktree)).ToList() : [];
     public Visibility WorktreesVisibility => Expanded && entry.Worktrees.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
     public Visibility ToggleVisibility => entry.Worktrees.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-    public string WorktreeCount => entry.Worktrees.Count.ToString(CultureInfo.CurrentCulture);
+    public string WorktreeCount => entry.Worktrees.Count.ToString(System.Globalization.CultureInfo.CurrentCulture);
     public string ToggleGlyph => Expanded ? "\uE70D" : "\uE76C";
-    public string ToggleLabel => Expanded ? "Hide worktrees" : entry.Worktrees.Count == 1 ? "Show 1 worktree" : $"Show {entry.Worktrees.Count} worktrees";
+    public string ToggleLabel => Expanded ? Strings.Menu_HideWorktrees : Localization.Plural(Strings.ResourceManager, "Menu_ShowWorktrees", entry.Worktrees.Count);
     public string Domain => current.Domain;
     public string Path => current.Path;
     public string? Url => current.Url;
@@ -368,7 +350,7 @@ public sealed class PanelSiteRow(PanelSiteValue value) : ObservableObject
     /// <summary>What runs the site: "PHP 8.4", or "Node.js 22" for a Node.js app.</summary>
     public string PhpLabel => current.IsNode ? $"Node.js {current.Node}" : $"PHP {Php}";
     public string WorkerLabel => Worker == Status.SiteServer.Octane ? "Octane" : "FrankenPHP";
-    public string ShareTooltip => $"Shared at {ShareUrl}";
+    public string ShareTooltip => Localization.Format(Strings.Menu_SharedAt, ShareUrl);
     public Visibility ProblemVisibility => Problem is not null ? Visibility.Visible : Visibility.Collapsed;
     public Visibility DebuggingVisibility => Debugging ? Visibility.Visible : Visibility.Collapsed;
     public Visibility FrankenPhpVisibility => IsFrankenPhp ? Visibility.Visible : Visibility.Collapsed;
@@ -382,7 +364,7 @@ public sealed class PanelSiteRow(PanelSiteValue value) : ObservableObject
         Status.NodeServerState.Running => "SystemFillColorSuccessBrush",
         Status.NodeServerState.Starting => "SystemFillColorCautionBrush",
         Status.NodeServerState.Failed => "SystemFillColorCriticalBrush",
-        _ => "ControlStrongFillColorDisabledBrush"
+        _ => "ControlStrongFillColorDisabledBrush",
     }];
 
     public void Update(PanelSiteValue value)
@@ -406,8 +388,8 @@ public sealed class PanelProxyRow(Status.Proxy proxy) : ObservableObject
     public bool Running => current.Running;
     public string ServerLabel => current.ServerLabel;
     public string Tooltip => Running ? $"{Url ?? Domain} → {current.Upstream}"
-        : current.Command is { } command ? $"{command.StateLabel}. Start it in Settings → Sites."
-        : $"Nothing answers at {current.Upstream}. Start the server there.";
+        : current.Command is { } command ? Localization.Format(Strings.Sites_Proxy_StartInSettings, command.StateLabel)
+        : Localization.Format(Strings.Sites_Proxy_NothingAnswers, current.Upstream);
     public string SecurityGlyph => current.Secured ? "\uE72E" : "\uE774";
     public Visibility ProblemVisibility => Problem is not null ? Visibility.Visible : Visibility.Collapsed;
     public Brush SecurityBrush => (Brush)Application.Current.Resources[current.Secured ? "SystemFillColorSuccessBrush" : "TextFillColorSecondaryBrush"];
@@ -416,7 +398,7 @@ public sealed class PanelProxyRow(Status.Proxy proxy) : ObservableObject
     {
         Status.ProxyState.Failed => "SystemFillColorCriticalBrush",
         Status.ProxyState.Starting or Status.ProxyState.Stopping => "SystemFillColorCautionBrush",
-        _ => Running ? "SystemFillColorSuccessBrush" : "ControlStrongFillColorDisabledBrush"
+        _ => Running ? "SystemFillColorSuccessBrush" : "ControlStrongFillColorDisabledBrush",
     }];
 
     public void Update(Status.Proxy value)
@@ -435,9 +417,9 @@ public sealed class PanelWorktreeRow(Status.Site worktree)
     public string Tooltip => Url ?? worktree.Problem ?? worktree.Path;
     public string? Message => worktree.Problem ?? (worktree.Worktree is { IsFailed: true, Error.Length: > 0 } setup ? setup.Error : null);
     public string SecurityGlyph => worktree.Secured ? "\uE72E" : "\uE774";
-    public string DatabaseLabel => worktree.Worktree is { DbMode.Length: > 0 } setup ? setup.DbMode : "own database";
-    public string DatabaseTooltip => $"Its own database: {worktree.Worktree?.Database}";
-    public string Step => worktree.Worktree is { Step.Length: > 0 } setup ? setup.Step : "Setting up…";
+    public string DatabaseLabel => worktree.Worktree is { DbMode.Length: > 0 } setup ? setup.DbMode : Strings.Worktrees_OwnDatabase;
+    public string DatabaseTooltip => Localization.Format(Strings.Worktrees_OwnDatabaseTooltip, worktree.Worktree?.Database);
+    public string Step => worktree.Worktree is { Step.Length: > 0 } setup ? setup.Step : Strings.Worktrees_SettingUp;
     public Visibility MessageVisibility => Message is not null ? Visibility.Visible : Visibility.Collapsed;
     public Visibility DatabaseVisibility => worktree.Worktree is { HasOwnDatabase: true } ? Visibility.Visible : Visibility.Collapsed;
     public Visibility StepVisibility => worktree.Worktree is { IsBusy: true } ? Visibility.Visible : Visibility.Collapsed;
@@ -469,14 +451,11 @@ public sealed record PanelServiceValue(string Id, string Name, string Detail, bo
 /// </summary>
 public sealed class DaemonSwitch(Action notify)
 {
-    private int generation;
     private bool? pending;
+    private int generation;
 
     /// <summary>The value the switch shows: the requested one while a change runs, otherwise <paramref name="actual" />.</summary>
-    public bool Show(bool actual)
-    {
-        return pending ?? actual;
-    }
+    public bool Show(bool actual) => pending ?? actual;
 
     public async Task ChangeAsync(bool value, Func<bool, Task> change)
     {

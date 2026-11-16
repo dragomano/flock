@@ -48,15 +48,28 @@ public sealed partial class GeneralViewModel : ObservableObject, IDisposable
     public bool IsRestarting => isRestarting();
     public bool HasParked => Config?.Parked.Count > 0;
     public bool HasSelectedParked => SelectedParked is not null;
-    public Visibility UpdateVisibility => model?.UpdateService.IsEnabled == true && UpdateService.Current is not null
-        ? Visibility.Visible
-        : Visibility.Collapsed;
-    public string UpdateDescription => model?.UpdateService is { } updater && UpdateService.Current is { } current
-        ? updater.Summary.Length > 0 ? $"Version {current} · {updater.Summary}" : $"Version {current}"
+    public bool UpdatesEnabled => model?.UpdateService.IsEnabled == true && UpdateService.Current is not null;
+    public Visibility UpdateActionsVisibility => UpdatesEnabled ? Visibility.Visible : Visibility.Collapsed;
+    public string UpdateDescription
+    {
+        get
+        {
+            if (!UpdatesEnabled || model is null || UpdateService.Current is not { } current)
+            {
+                return Strings.General_UpdatesNeedVersion;
+            }
+            var version = Localization.Format(Strings.General_VersionNumber, current);
+            var summary = model.UpdateService.Summary;
+            return summary.Length > 0 ? $"{version} · {summary}" : version;
+        }
+    }
+    public bool HasUpdate => model?.UpdateService.Available is not null;
+    public string UpdateToText => model?.UpdateService.Available is { } update
+        ? Localization.Format(Strings.General_UpdateTo, update.Version)
         : "";
-    public string UpdateActionText => model?.UpdateService.Available is { } update
-        ? $"Update to {update.Version}"
-        : "Check for Updates";
+    // Two buttons, since only the update itself is an accent button.
+    public Visibility UpdateToVisibility => HasUpdate ? Visibility.Visible : Visibility.Collapsed;
+    public Visibility CheckForUpdatesVisibility => HasUpdate ? Visibility.Collapsed : Visibility.Visible;
     public bool IsUpdateBusy => model?.UpdateService.IsBusy == true;
     public Visibility UpdateProgressVisibility => IsUpdateBusy ? Visibility.Visible : Visibility.Collapsed;
     public Visibility ReleaseNotesVisibility => model?.UpdateService is { Available: { } available, IsBusy: false }
@@ -64,21 +77,24 @@ public sealed partial class GeneralViewModel : ObservableObject, IDisposable
         ? Visibility.Visible
         : Visibility.Collapsed;
     public Visibility StatusVisibility => Status is null ? Visibility.Collapsed : Visibility.Visible;
-    public string StatusText => Status?.IsDegraded == true ? "Needs attention" : "Running";
-    public Brush StatusBrush => Status?.IsDegraded == true ? Ui.Caution : Ui.Success;
+    // Shown without the daemon too: General also holds the app's own settings (its language).
+    public string StatusText => Status is null ? Strings.Menu_Status_NotRunning : Status.IsDegraded ? Strings.Menu_Status_NeedsAttention : Strings.Menu_Status_Running;
+    public Brush StatusBrush => Status is null ? Ui.Brush("ControlStrongFillColorDisabledBrush") : Status.IsDegraded ? Ui.Caution : Ui.Success;
     public string VersionText => Status?.Version ?? "";
-    public string ProcessText => Status is { } status ? $"pid {status.Pid}" : "";
+    public string ProcessText => Status is { } status ? Localization.Format(Strings.General_Pid, status.Pid) : "";
     public Visibility ConfigVisibility => Config is null ? Visibility.Collapsed : Visibility.Visible;
     public string DomainDescription => Status?.Dns is { Wildcard: true }
-        ? "Every name, any subdomain included, is resolved by Flock's DNS server. Site domains are also in the hosts file."
-        : $"Only site domains and the domains added to sites resolve (the hosts file){(Status?.Dns?.WildcardProblem is { Length: > 0 } problem ? $": {problem}" : string.Empty)}.";
+        ? Strings.General_DomainWildcard
+        : Status?.Dns?.WildcardProblem is { Length: > 0 } problem
+            ? Localization.Format(Strings.General_DomainHostsOnlyBecause, problem)
+            : Strings.General_DomainHostsOnly;
     public string DomainValue => Config is { } config ? $"*.{config.Tld}" : "";
     public string ProjectFoldersDescription => Config is { } config
-        ? $"Every folder inside a project folder is served as <folder>.{config.Tld} — the same as `flock park`."
+        ? Localization.Format(Strings.General_ProjectFoldersDescription, config.Tld)
         : "";
     public string Root => Config?.Root ?? "";
     public string PortsDescription => Config is { } config && (config.Ports.Http != 80 || config.Ports.Https != 443)
-        ? $"Sites use ports {config.Ports.Http} (HTTP) and {config.Ports.Https} (HTTPS), set in config.json, so their addresses include the port."
+        ? Localization.Format(Strings.General_Ports, config.Ports.Http, config.Ports.Https)
         : "";
     public Visibility PortsVisibility => PortsDescription.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
     public bool IsBeta => Config?.Channel == "beta";
@@ -191,9 +207,13 @@ public sealed partial class GeneralViewModel : ObservableObject, IDisposable
 
     private void NotifyUpdateState()
     {
-        OnPropertyChanged(nameof(UpdateVisibility));
+        OnPropertyChanged(nameof(UpdatesEnabled));
+        OnPropertyChanged(nameof(UpdateActionsVisibility));
         OnPropertyChanged(nameof(UpdateDescription));
-        OnPropertyChanged(nameof(UpdateActionText));
+        OnPropertyChanged(nameof(HasUpdate));
+        OnPropertyChanged(nameof(UpdateToText));
+        OnPropertyChanged(nameof(UpdateToVisibility));
+        OnPropertyChanged(nameof(CheckForUpdatesVisibility));
         OnPropertyChanged(nameof(IsUpdateBusy));
         OnPropertyChanged(nameof(UpdateProgressVisibility));
         OnPropertyChanged(nameof(ReleaseNotesVisibility));

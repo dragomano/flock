@@ -22,13 +22,14 @@ internal sealed partial class GeneralPane : ISettingsPane
         viewModel = new GeneralViewModel(model);
         DataContext = viewModel;
         Startup.IsOn = Native.StartsAtSignIn;
+        LanguageHost.Children.Add(LanguageSetting.Create(model.Preferences));
         viewModel.PropertyChanged += ViewModelChanged;
         loaded = true;
         UpdateParked();
     }
 
-    public string Title => "General";
-    public string Subtitle => "The Flock daemon runs your sites, PHP and services in the background.";
+    public string Title => Strings.General_Title;
+    public string Subtitle => Strings.General_Subtitle;
     public UIElement Root => this;
     public bool ScrollsItself => false;
     public Task ActivateAsync(CancellationToken hidden)
@@ -91,9 +92,9 @@ internal sealed partial class GeneralPane : ISettingsPane
         {
             Title = $"Flock {update.Version}",
             Content = notes,
-            PrimaryButtonText = $"Update to {update.Version}",
-            SecondaryButtonText = update.NotesUrl is null ? "" : "View on GitHub",
-            CloseButtonText = "Close",
+            PrimaryButtonText = Localization.Format(Strings.General_UpdateTo, update.Version),
+            SecondaryButtonText = update.NotesUrl is null ? "" : Strings.General_ViewOnGithub,
+            CloseButtonText = Strings.Common_Close,
             DefaultButton = ContentDialogButton.Primary,
             XamlRoot = XamlRoot,
             Resources =
@@ -113,17 +114,14 @@ internal sealed partial class GeneralPane : ISettingsPane
             await notes.ReleaseAsync();
         }
 
-        switch (result)
+        // Close and Esc give None: nothing to do then.
+        if (result == ContentDialogResult.Primary)
         {
-            case ContentDialogResult.Primary:
-                await model.UpdateService.InstallAsync();
-                break;
-            case ContentDialogResult.Secondary:
-                model.Open(update.NotesUrl!);
-                break;
-            case ContentDialogResult.None:
-            default:
-                throw new ArgumentOutOfRangeException();
+            await model.UpdateService.InstallAsync();
+        }
+        else if (result == ContentDialogResult.Secondary)
+        {
+            model.Open(update.NotesUrl!);
         }
     }
 
@@ -152,7 +150,7 @@ internal sealed partial class GeneralPane : ISettingsPane
         }
         catch (Exception e) when (e is UnauthorizedAccessException or SecurityException or IOException)
         {
-            model.ShowRuntimeError($"Could not change the startup setting: {e.Message}");
+            model.ShowRuntimeError(Localization.Format(Strings.General_CouldNotChangeStartup, e.Message));
         }
     }
 
@@ -172,7 +170,7 @@ internal sealed partial class GeneralPane : ISettingsPane
 
     private async void AddParkedClicked(object sender, RoutedEventArgs args)
     {
-        var paths = await window.PickFolders("Add Project Folders");
+        var paths = await window.PickFolders(Strings.General_AddProjectFoldersTitle);
         if (paths.Count > 0)
         {
             await PerformAsync(async client =>
@@ -190,8 +188,8 @@ internal sealed partial class GeneralPane : ISettingsPane
         if (viewModel.SelectedParked is not { } path)
             return;
 
-        if (!await window.Confirm($"Remove {path} from project folders?",
-                "Its folders stop being served as sites. Nothing is deleted from disk.", "Remove", true))
+        if (!await window.Confirm(Localization.Format(Strings.General_RemoveProjectFolderQuestion, path),
+                Strings.General_RemoveProjectFolderDetails, Strings.Common_Remove, true))
             return;
 
         viewModel.SelectedParked = null;
