@@ -278,10 +278,11 @@ const xdebugRequest = `{cookie.XDEBUG_SESSION} != "" || {cookie.XDEBUG_TRIGGER} 
 	`{query.XDEBUG_SESSION} != "" || {query.XDEBUG_SESSION_START} != "" || {query.XDEBUG_TRIGGER} != ""`
 
 // reverbRequest matches the Pusher protocol's requests on /app/* and /apps/*: WebSocket connections
-// (an Upgrade header; ?protocol=…&client=…, which pusher-js always sends, also covers WebSockets over
-// HTTP/2, which have none) and the signed HTTP API Laravel broadcasts through. Other requests there
-// stay the app's, e.g. a panel at /app, even with a ?protocol= filter of its own.
-const reverbRequest = `{http.request.header.Upgrade} != "" || ({query.protocol} != "" && {query.client} != "") || {query.auth_signature} != ""`
+// (Upgrade: websocket; ?protocol=…&client=…, which pusher-js always sends, also covers WebSockets
+// over HTTP/2, which have no Upgrade header) and the signed HTTP API Laravel broadcasts through.
+// Other requests there stay the app's, e.g. a panel at /app, even with a ?protocol= filter of its
+// own or another upgrade (h2c).
+const reverbRequest = `{http.request.header.Upgrade}.matches("(?i)^websocket$") || ({query.protocol} != "" && {query.client} != "") || {query.auth_signature} != ""`
 
 func app(s Site) string {
 	if strings.TrimSpace(s.Handlers) == "" {

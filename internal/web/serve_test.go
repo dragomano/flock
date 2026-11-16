@@ -674,6 +674,19 @@ func TestSendsReverbRequestsToReverb(t *testing.T) {
 		t.Fatalf("through the WebSocket: %v %q", err, head[:n])
 	}
 
+	// Another upgrade, of the app's own pages, stays the app's: PHP, a 502 here.
+	h2c, err := tls.Dial("tcp", fmt.Sprintf("127.0.0.1:%d", cfg.HTTPSPort), tlsConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer h2c.Close()
+	_ = h2c.SetDeadline(time.Now().Add(5 * time.Second))
+	fmt.Fprint(h2c, "GET /app/dashboard HTTP/1.1\r\nHost: chat.test\r\nConnection: Upgrade, HTTP2-Settings\r\nUpgrade: h2c\r\n"+
+		"HTTP2-Settings: AAMAAABkAARAAAAAAAIAAAAA\r\n\r\n")
+	if n, err = h2c.Read(head); err != nil || !strings.HasPrefix(string(head[:n]), "HTTP/1.1 502") {
+		t.Fatalf("an h2c upgrade: %v %q", err, head[:n])
+	}
+
 	client := &http.Client{Timeout: 5 * time.Second, Transport: &http.Transport{
 		TLSClientConfig: &tls.Config{RootCAs: pool},
 		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
@@ -684,10 +697,10 @@ func TestSendsReverbRequestsToReverb(t *testing.T) {
 	}}
 	for path, want := range map[string]string{
 		"/apps/1/events?auth_key=k&auth_timestamp=1&auth_signature=s": "reverb /apps/1/events", // a broadcast
-		"/app/key?protocol=7&client=js": "reverb /app/key", // a WebSocket over HTTP/2 has no Upgrade header
-		"/app/dashboard":                "",                // the app's pages: PHP, a 502 here
-		"/app/servers?protocol=ssh":     "",                // with a ?protocol= filter of the app's own
-		"/apps/list":                    "",
+		"/app/key?protocol=7&client=js":                               "reverb /app/key",       // a WebSocket over HTTP/2 has no Upgrade header
+		"/app/dashboard":                                              "",                      // the app's pages: PHP, a 502 here
+		"/app/servers?protocol=ssh":                                   "",                      // with a ?protocol= filter of the app's own
+		"/apps/list":                                                  "",
 	} {
 		resp, err := client.Post(base+path, "application/json", strings.NewReader("{}"))
 		if err != nil {
