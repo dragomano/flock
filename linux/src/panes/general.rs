@@ -281,8 +281,15 @@ pub fn language() -> adw::PreferencesGroup {
     row.connect_selected_notify(move |row| {
         let code = codes[row.selected() as usize];
         let mut p = prefs::load();
-        p.language = code.to_owned();
-        let _ = prefs::save(&p);
+        let previous = std::mem::replace(&mut p.language, code.to_owned());
+        if prefs::save(&p).is_err() {
+            // Not saved: back to the saved language. That notifies once more, and then matches.
+            let at = codes.iter().position(|code| *code == previous).unwrap_or(0) as u32;
+            if at != row.selected() {
+                row.set_selected(at);
+            }
+            return;
+        }
         shown.set_visible(pending(code));
     });
     group.add(&row);
