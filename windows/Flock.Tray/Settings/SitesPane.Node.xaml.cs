@@ -14,11 +14,11 @@ internal sealed partial class SitesPane
         fields.FitTo(Window.XamlRoot);
         var dialog = new ContentDialog
         {
-            Title = current is null ? $"Add commands to {proxy.Name}" : $"Commands of {proxy.Name}",
+            Title = Localization.Format(current is null ? Strings.Sites_Proxy_AddCommandsTitle : Strings.Sites_Proxy_CommandsTitle, proxy.Name),
             Content = fields,
-            PrimaryButtonText = "Save",
-            SecondaryButtonText = current is null ? "" : "Remove Commands",
-            CloseButtonText = "Cancel",
+            PrimaryButtonText = Strings.Common_Save,
+            SecondaryButtonText = current is null ? "" : Strings.Sites_Proxy_RemoveCommands,
+            CloseButtonText = Strings.Common_Cancel,
             DefaultButton = ContentDialogButton.Primary,
             XamlRoot = Window.XamlRoot,
         };

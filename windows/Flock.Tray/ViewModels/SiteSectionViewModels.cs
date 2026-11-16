@@ -1,3 +1,4 @@
+using System.Globalization;
 using CommunityToolkit.Mvvm.Input;
 using Flock.Kit;
 using Flock.Tray.Features.Sites;
@@ -17,25 +18,25 @@ internal sealed partial class ShareSectionViewModel(ISiteDetailHost host) : Deta
     public bool IsIdle => share is null;
     public bool CanShare => site.Url is not null;
     public bool IsStarting => share?.State is Status.ShareState.Building or Status.ShareState.Starting;
-    public string StartingText => share?.State == Status.ShareState.Building ? "Building assets…" : "Starting the tunnel…";
+    public string StartingText => share?.State == Status.ShareState.Building ? Strings.Sites_Share_Building : Strings.Sites_Share_Starting;
     public bool IsRunning => share is { State: Status.ShareState.Running, Url: not null };
     public bool IsStopped => share is not null && !IsStarting && !IsRunning;
 
     public string Url => share?.Url ?? "";
     public string Qr => IsRunning && share?.Qr is { Length: > 0 } data ? data : "";
     public bool HasQr => Qr.Length > 0;
-    public string Expires => share?.ExpiresAt is { } expires ? $"Ends at {expires.ToLocalTime():t}" : "";
-    public string Allowed => share is { Allow.Count: > 0 } ? $"Only for: {string.Join(", ", share.Allow)}" : "";
+    public string Expires => share?.ExpiresAt is { } expires ? Localization.Format(Strings.Sites_Share_EndsAt, expires.ToLocalTime().ToString("t", CultureInfo.CurrentCulture)) : "";
+    public string Allowed => share is { Allow.Count: > 0 } ? Localization.Format(Strings.Sites_Share_OnlyFor, string.Join(", ", share.Allow)) : "";
     public bool IsDebug => share?.Debug == true;
     public string Warning => share?.Warning ?? "";
     public bool HasWarning => share?.Warning is not null;
     public string RebuildError => share?.RebuildError ?? "";
     public bool HasRebuildError => share?.RebuildError is not null;
     public bool CanRebuild => share?.CanRebuild == true;
-    public string RebuildText => share?.Rebuilding == true ? "Rebuilding…" : "Rebuild assets";
+    public string RebuildText => share?.Rebuilding == true ? Strings.Sites_Share_Rebuilding : Strings.Sites_Share_Rebuild;
     public bool IsRebuildEnabled => share?.Rebuilding != true;
-    public string Failure => share?.Error ?? "The share stopped.";
-    public string StopText => share?.IsRunning == true ? "Stop sharing" : share?.IsFailed == true ? "Dismiss" : "Stop";
+    public string Failure => share?.Error ?? Strings.Sites_Share_Stopped;
+    public string StopText => share?.IsRunning == true ? Strings.Sites_Share_StopSharing : share?.IsFailed == true ? Strings.Sites_Share_Dismiss : Strings.Sites_Share_Stop;
 
     /// <summary>The site the QR code is saved for.</summary>
     public string SiteName => site.Name;
@@ -174,18 +175,18 @@ internal sealed partial class SiteServerSectionViewModel(ISiteDetailHost host) :
     }
 
     public bool CanPickOctane => octane || site.OctaneAvailable;
-    public string? ModeTooltip => site.OctaneAvailable ? null : "Install Laravel Octane in the project (composer require laravel/octane) to use worker mode.";
+    public string? ModeTooltip => site.OctaneAvailable ? null : Strings.Sites_OctaneTooltip;
 
     // FrankenPHP's state: running, downloading, or why php-cgi serves the site meanwhile.
     private Status.SiteFrankenPhp? State => franken ? site.FrankenPhp : null;
     public bool IsRunning => State is { IsRunning: true };
     public string RunningText => State is { } state
-        ? $"Running FrankenPHP {state.Version} with PHP {state.PhpVersion}" + (site.Worker == Status.SiteServer.Octane ? " · worker mode" : "")
+        ? Localization.Format(site.Worker == Status.SiteServer.Octane ? Strings.Sites_FrankenphpRunningWorker : Strings.Sites_FrankenphpRunning, state.Version, state.PhpVersion)
         : "";
     public bool IsInstalling => State is { IsRunning: false, IsInstalling: true };
     public string InstallingText => State is { HasProgress: true } state
-        ? $"Downloading FrankenPHP for PHP {site.Php}… {Math.Round(state.Progress * 100)}%"
-        : $"Downloading FrankenPHP for PHP {site.Php}…";
+        ? Localization.Format(Strings.Sites_DownloadingFrankenphpForPhp, site.Php, Math.Round(state.Progress * 100))
+        : Localization.Format(Strings.Sites_DownloadingFrankenphp, site.Php);
     public double Progress => State is { HasProgress: true } state ? state.Progress : 0;
     public bool IsProgressIndeterminate => State is not { HasProgress: true };
     public bool IsWaiting => State is { IsRunning: false, IsInstalling: false };
@@ -195,8 +196,8 @@ internal sealed partial class SiteServerSectionViewModel(ISiteDetailHost host) :
     public bool CanRestart => site.FrankenPhp is { IsRunning: true } && !restarting;
 
     public string Note => franken && !site.OctaneAvailable
-        ? "FrankenPHP needs PHP 8.2 or newer. Requests that ask for Xdebug still go to PHP-CGI. For worker mode, install Laravel Octane in the project (composer require laravel/octane)."
-        : "FrankenPHP needs PHP 8.2 or newer. Requests that ask for Xdebug still go to PHP-CGI.";
+        ? Strings.Sites_FrankenphpFootnoteOctane
+        : Strings.Sites_FrankenphpFootnote;
 
     public void Update(Status.Site value, SiteRowViewModel? draft, bool isRestarting)
     {
@@ -263,18 +264,21 @@ internal sealed partial class ReverbSectionViewModel(ISiteDetailHost host, Outpu
         }
     }
 
+    /// <summary>Where browsers reach Reverb: wss://app.test/app.</summary>
+    private string Address => $"{scheme}://{site.Domain}/app";
+
     public bool CanToggle => site.ReverbAvailable || reverb is not null;
     public bool IsOff => reverb is null;
     public string OffNote => site.ReverbAvailable
-        ? $"Flock runs php artisan reverb:start for the site. Browsers reach it at {scheme}://{site.Domain}/app, with no port or certificate of its own."
-        : "Install Laravel Reverb in the project (php artisan install:broadcasting --reverb) to run it.";
+        ? Localization.Format(Strings.Sites_Reverb_Explanation, Address)
+        : Strings.Sites_Reverb_Install;
     public bool HasReverb => reverb is not null;
     public bool IsRunning => reverb?.State == Status.ReverbState.Running;
-    public string RunningText => $"Running at {scheme}://{site.Domain}/app";
+    public string RunningText => Localization.Format(Strings.Sites_Reverb_RunningAt, Address);
     public bool IsFailed => reverb?.State == Status.ReverbState.Failed;
-    public string FailedText => reverb is { Problem.Length: > 0 } ? reverb.Problem : "Failed";
+    public string FailedText => reverb is { Problem.Length: > 0 } ? reverb.Problem : Strings.Sites_Server_Failed;
     public bool IsUnavailable => reverb is not null && !IsRunning && !IsFailed;
-    public string UnavailableText => reverb is { Problem.Length: > 0 } ? reverb.Problem : "Reverb can't run.";
+    public string UnavailableText => reverb is { Problem.Length: > 0 } ? reverb.Problem : Strings.Sites_Reverb_CantRun;
     public bool HasEnv => reverb is { Env.Count: > 0 };
     public string Env => reverb is null ? "" : string.Join("\n", reverb.Env);
     public bool IsRestarting => restarting;

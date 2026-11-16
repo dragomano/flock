@@ -22,7 +22,7 @@ internal sealed partial class SiteExtensionsViewModel(SitesService sites, Status
     public bool HasError => error is not null;
     public bool IsLoading => report is null && error is null;
     public bool HasReport => report is not null;
-    public string Summary => report is null ? "" : report.Laravel ? $"PHP {report.Php} · Laravel app" : $"PHP {report.Php}";
+    public string Summary => report is null ? "" : report.Laravel ? Localization.Format(Strings.Sites_ExtensionsLaravel, report.Php) : $"PHP {report.Php}";
     public bool HasNoExtensions => report is { Extensions.Count: 0 };
     public IReadOnlyList<ExtensionItemViewModel> Extensions { get; private set; } = [];
     public string SitePath => site.Path;
@@ -78,13 +78,13 @@ internal sealed partial class ExtensionItemViewModel(SiteExtensionsViewModel lis
     public string Name => extension.Name;
     public string Glyph => !extension.Available ? Ui.GlyphWarning : extension.Declared ? Ui.GlyphPuzzle : Ui.GlyphInfo;
     public string Tone => (!extension.Available ? Ui.Tone.Critical : extension.Declared ? Ui.Tone.Success : Ui.Tone.Caution).ToString();
-    public string Detail => (extension.Declared ? $"Required by {string.Join(", ", extension.RequiredBy)}" : $"Not required, but used: {extension.Hint}")
-                            + (extension.Available ? "" : $" — Flock's PHP {php} doesn't include it");
+    public string Detail => (extension.Declared ? Localization.Format(Strings.Sites_ExtensionRequiredBy, string.Join(", ", extension.RequiredBy)) : Localization.Format(Strings.Sites_ExtensionUsed, extension.Hint))
+                            + (extension.Available ? "" : " — " + Localization.Format(Strings.Sites_ExtensionMissing, php));
     public bool IsAdding => adding;
     public bool IsConfirming => !adding && confirming;
     public bool CanBeAdded => !adding && !confirming && !extension.Declared;
     public bool CanAdd => canAdd;
-    public string RequireTooltip => $"Runs composer require ext-{extension.Name}:* in {list.SitePath}, which changes composer.json and composer.lock. Commit them with the project.";
+    public string RequireTooltip => Localization.Format(Strings.Sites_RequireTooltip, extension.Name, list.SitePath);
 
     [RelayCommand]
     private void Confirm() => list.Confirm(extension.Name);

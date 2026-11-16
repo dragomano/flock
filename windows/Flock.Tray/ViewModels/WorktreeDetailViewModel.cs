@@ -11,7 +11,7 @@ internal sealed partial class WorktreeDetailViewModel : DetailViewModel
 {
     // The database pickers' modes and their labels, in their order.
     internal static readonly string[] DatabaseModes = [Status.WorktreeDatabase.Shared, Status.WorktreeDatabase.Copy, Status.WorktreeDatabase.Fresh];
-    internal static readonly string[] DatabaseChoices = ["The site's", "A copy of the site's", "A new, empty one"];
+    internal static string[] DatabaseChoices => [Strings.Worktrees_DatabaseShared, Strings.Worktrees_DatabaseCopy, Strings.Worktrees_DatabaseFresh];
 
     private readonly ISiteDetailHost host;
     private Status.Site worktree = new();
@@ -32,11 +32,11 @@ internal sealed partial class WorktreeDetailViewModel : DetailViewModel
     public string Url => worktree.Url ?? "";
     public bool HasUrl => worktree.Url is not null;
     public string Path => worktree.Path;
-    public string OpenLabel => $"Open {worktree.Url ?? worktree.Domain}";
+    public string OpenLabel => Localization.Format(Strings.Common_OpenTarget, worktree.Url ?? worktree.Domain);
     public string Problem => worktree.Problem ?? "";
 
     // Worktree: its branch, folder and site.
-    public string Branch => worktree.Branch.Length > 0 ? worktree.Branch : "None (detached HEAD)";
+    public string Branch => worktree.Branch.Length > 0 ? worktree.Branch : Strings.Worktrees_DetachedHead;
     public string Domain => worktree.Domain;
     public string Parent => worktree.Parent ?? "";
     public bool HasParent => hasParent;
@@ -46,17 +46,17 @@ internal sealed partial class WorktreeDetailViewModel : DetailViewModel
     public bool IsPhp => !worktree.IsNode;
     public bool IsNode => worktree.IsNode;
     public string PhpText => $"PHP {worktree.Php}";
-    public string NodeText => worktree.Node is { Length: > 0 } node ? $"Node {node}" : "None";
-    public string HttpsText => worktree.Secured ? "On" : "Off";
+    public string NodeText => worktree.Node is { Length: > 0 } node ? $"Node {node}" : Strings.Worktrees_None;
+    public string HttpsText => worktree.Secured ? Strings.Worktrees_On : Strings.Worktrees_Off;
     public string SettingsNote => worktree.IsNode
-        ? $"Uses {Parent}'s settings: Node.js and HTTPS (a version the branch pins applies too). Change them on {Parent}."
-        : $"Uses {Parent}'s settings: PHP, Node.js, HTTPS and the document root (versions the branch pins apply too). Change them on {Parent}.";
+        ? Localization.Format(Strings.Worktrees_UsesSiteSettingsNode, Parent)
+        : Localization.Format(Strings.Worktrees_UsesSiteSettings, Parent);
 
     public DevServerSectionViewModel DevServer { get; }
 
     // Database: the site's or its own, and a picker that switches it.
     private Status.WorktreeSetup? Setup => worktree.Worktree;
-    public string CurrentDatabase => Setup is { HasOwnDatabase: true } setup ? setup.Database : "The site's";
+    public string CurrentDatabase => Setup is { HasOwnDatabase: true } setup ? setup.Database : Strings.Worktrees_DatabaseShared;
     public IReadOnlyList<string> DatabaseItems { get; } = DatabaseChoices;
 
     public int DatabaseIndex
@@ -78,7 +78,7 @@ internal sealed partial class WorktreeDetailViewModel : DetailViewModel
     }
 
     public bool CanSwitchDatabase => Setup is { IsBusy: false };
-    public string? DatabaseTooltip => Setup is null ? "Set the worktree up first." : null;
+    public string? DatabaseTooltip => Setup is null ? Strings.Worktrees_SetUpFirst : null;
 
     // Setup: queued, running (the step), set up or failed (why), with its log and Run Setup Again.
     public bool IsNotSetUp => Setup is null;
@@ -86,12 +86,12 @@ internal sealed partial class WorktreeDetailViewModel : DetailViewModel
     public bool IsBusy => Setup is { IsBusy: true };
     public string BusyText => Setup switch
     {
-        { State: Status.WorktreeState.Queued } => "Waiting for another setup to finish…",
+        { State: Status.WorktreeState.Queued } => Strings.Worktrees_Waiting,
         { Step.Length: > 0 } setup => setup.Step + "…",
-        _ => "Setting up…",
+        _ => Strings.Worktrees_SettingUp,
     };
     public bool IsFailed => Setup is { IsBusy: false, IsFailed: true };
-    public string FailedText => Setup is { Error.Length: > 0 } setup ? setup.Error : "The setup failed.";
+    public string FailedText => Setup is { Error.Length: > 0 } setup ? setup.Error : Strings.Worktrees_SetupFailedSentence;
     public bool IsReady => Setup is { IsBusy: false, IsFailed: false };
     public bool HasLog => Setup is { Log.Length: > 0 };
     public bool CanRunAgain => Setup is { IsBusy: false };

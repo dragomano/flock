@@ -58,8 +58,8 @@ internal sealed partial class SitesPane : UserControl, ISettingsPane, ISiteDetai
     {
     }
 
-    public string Title => "Sites";
-    public string Subtitle => "Sites you added one by one, plus every folder inside your project folders.";
+    public string Title => Strings.Settings_Pane_Sites;
+    public string Subtitle => Strings.Sites_Subtitle;
     public UIElement Root => this;
     public bool ScrollsItself => true;
 
@@ -198,7 +198,7 @@ internal sealed partial class SitesPane : UserControl, ISettingsPane, ISiteDetai
             await Ui.Inform(Window.XamlRoot, resolution.Title, resolution.Message);
             return;
         }
-        if (await Window.Confirm(resolution.Title, resolution.Message, "Secure"))
+        if (await Window.Confirm(resolution.Title, resolution.Message, Strings.Sites_Secure))
         {
             await Model.Sites.UpdateAsync(resolution.Site, new SiteChange(Secured: true), hidden);
         }
@@ -214,7 +214,7 @@ internal sealed partial class SitesPane : UserControl, ISettingsPane, ISiteDetai
 
     private async Task RemoveSiteAsync(Status.Site site)
     {
-        if (await Window.Confirm($"Remove {site.Name}?", $"{site.Domain} stops being served. The project's files stay where they are.", "Remove", true))
+        if (await Window.Confirm(Localization.Format(Strings.Common_RemoveQuestion, site.Name), Localization.Format(Strings.Sites_RemoveSiteDetails, site.Domain), Strings.Common_Remove, true))
         {
             await Model.Sites.UnlinkAsync(site.Name);
         }
@@ -333,10 +333,10 @@ internal sealed partial class SitesPane : UserControl, ISettingsPane, ISiteDetai
         var form = new AddProxyForm(Window.XamlRoot, tld, Window.PickFolder);
         var dialog = new ContentDialog
         {
-            Title = "Add a proxy",
+            Title = Strings.Sites_AddProxyTitle,
             Content = form,
-            PrimaryButtonText = "Add",
-            CloseButtonText = "Cancel",
+            PrimaryButtonText = Strings.Common_Add,
+            CloseButtonText = Strings.Common_Cancel,
             DefaultButton = ContentDialogButton.Primary,
             XamlRoot = Window.XamlRoot
         };
@@ -359,9 +359,9 @@ internal sealed partial class SitesPane : UserControl, ISettingsPane, ISiteDetai
 
     private async Task ChangeUpstreamAsync(Status.Proxy proxy)
     {
-        if (await Window.Ask($"Change the upstream of {proxy.Name}",
-                "A port means 127.0.0.1; give a host and port (localhost:5173) or a URL (https://127.0.0.1:8443) for anything else.",
-                "Port, host:port or URL", "Change", proxy.UpstreamLabel) is { } upstream && upstream != proxy.UpstreamLabel)
+        if (await Window.Ask(Localization.Format(Strings.Sites_ChangeUpstreamTitle, proxy.Name),
+                Strings.Sites_ChangeUpstreamDetails,
+                Strings.Sites_UpstreamPlaceholder, Strings.Sites_ChangeAction, proxy.UpstreamLabel) is { } upstream && upstream != proxy.UpstreamLabel)
         {
             await Model.Sites.ProxyAsync(proxy.Name, upstream);
         }
@@ -369,7 +369,7 @@ internal sealed partial class SitesPane : UserControl, ISettingsPane, ISiteDetai
 
     private async Task RemoveProxyAsync(Status.Proxy proxy)
     {
-        if (await Window.Confirm($"Remove {proxy.Name}?", $"Flock stops serving {proxy.Domain}. The server at {proxy.Upstream} keeps running.", "Remove", true))
+        if (await Window.Confirm(Localization.Format(Strings.Common_RemoveQuestion, proxy.Name), Localization.Format(Strings.Sites_RemoveProxyDetails, proxy.Domain, proxy.Upstream), Strings.Common_Remove, true))
         {
             await Model.Sites.RemoveProxyAsync(proxy.Name);
         }
@@ -399,8 +399,8 @@ internal sealed partial class SitesPane : UserControl, ISettingsPane, ISiteDetai
         }
         if (site.RootFor(folder) is not { } root)
         {
-            await Ui.Inform(Window.XamlRoot, "Choose a folder in the project",
-                $"{folder} isn't in {site.Path}. The document root must be a folder in the project.");
+            await Ui.Inform(Window.XamlRoot, Strings.Sites_ChooseFolderInProject,
+                Localization.Format(Strings.Sites_ChooseFolderInProjectDetails, folder, site.Path));
             return;
         }
         await Model.Sites.UpdateAsync(site.Name, new SiteChange(Root: root));
@@ -408,11 +408,9 @@ internal sealed partial class SitesPane : UserControl, ISettingsPane, ISiteDetai
 
     private async Task AddBoostGuideline(Status.Site site, bool missing)
     {
-        var title = missing ? $"Add Flock to {site.Name}'s Boost guidelines?" : $"Update Flock's guideline in {site.Name}?";
-        var details =
-            $"Writes .ai\\guidelines\\flock.md in {site.Path} and runs php artisan boost:update, so AI agents know Flock serves the app and picks its PHP version. " +
-            "Commit it with the rest of .ai\\guidelines. This changes files in your project.";
-        if (await Window.Confirm(title, details, missing ? "Add" : "Update"))
+        var title = Localization.Format(missing ? Strings.Sites_BoostAddQuestion : Strings.Sites_BoostUpdateQuestion, site.Name);
+        var details = Localization.Format(Strings.Sites_BoostDetails, site.Path);
+        if (await Window.Confirm(title, details, missing ? Strings.Common_Add : Strings.Common_Update))
         {
             await Model.Sites.AddBoostGuidelineAsync(site.Name);
         }
@@ -429,9 +427,9 @@ internal sealed partial class SitesPane : UserControl, ISettingsPane, ISiteDetai
         var extensions = new SiteExtensionsViewModel(Model.Sites, site, add => Start("extensions:" + site.Name, add), token);
         var dialog = new ContentDialog
         {
-            Title = $"PHP extensions of {site.Name}",
+            Title = Localization.Format(Strings.Sites_ExtensionsTitle, site.Name),
             Content = new SiteExtensionsView(extensions),
-            CloseButtonText = "Done",
+            CloseButtonText = Strings.Common_Done,
             DefaultButton = ContentDialogButton.Close,
             XamlRoot = Window.XamlRoot
         };
@@ -449,10 +447,14 @@ internal sealed partial class SitesPane : UserControl, ISettingsPane, ISiteDetai
     {
         var dns = Model.Status?.Dns;
         var depth = dns?.MaxDepth ?? 4;
+        var alias = $"{site.Name}-2.{dns?.Tld ?? "test"}";
         var details = dns is { Wildcard: true }
-            ? $"Every subdomain up to {depth} levels below {site.Domain} already works on this PC. Add one here so it also works where wildcard DNS doesn't (it's written to the hosts file), or add an alias like {site.Name}-2.{dns.Tld}."
-            : $"Wildcard subdomains don't work on this PC{(dns?.WildcardProblem is { Length: > 0 } p ? $" ({p})" : "")}, so add each one you use: it's written to the hosts file. A full name like {site.Name}-2.{dns?.Tld ?? "test"} adds an alias.";
-        if (await Window.Ask($"Add a domain to {site.Name}", details, $"tenant1, a.b or {site.Name}-2.{dns?.Tld ?? "test"}", "Add") is { } domain)
+            ? Localization.Plural(Strings.ResourceManager, "Sites_AddDomainWildcard", depth, site.Domain, alias)
+            : dns?.WildcardProblem is { Length: > 0 } p
+                ? Localization.Format(Strings.Sites_AddDomainNoWildcardBecause, p, alias)
+                : Localization.Format(Strings.Sites_AddDomainNoWildcard, alias);
+        if (await Window.Ask(Localization.Format(Strings.Sites_AddDomainTitle, site.Name), details,
+                Localization.Format(Strings.Sites_AddDomainPlaceholder, alias), Strings.Common_Add) is { } domain)
         {
             await Model.Sites.AddDomainAsync(site.Name, domain);
         }
@@ -460,7 +462,7 @@ internal sealed partial class SitesPane : UserControl, ISettingsPane, ISiteDetai
 
     private async Task RemoveDomain(Status.Site site, Status.SiteDomain domain)
     {
-        if (await Window.Confirm($"Remove {domain.Host}?", $"{domain.Host} no longer opens {site.Name}.", "Remove", true))
+        if (await Window.Confirm(Localization.Format(Strings.Common_RemoveQuestion, domain.Host), Localization.Format(Strings.Sites_RemoveDomainDetails, domain.Host, site.Name), Strings.Common_Remove, true))
         {
             await Model.Sites.RemoveDomainAsync(site.Name, domain.Entry);
         }
@@ -469,7 +471,13 @@ internal sealed partial class SitesPane : UserControl, ISettingsPane, ISiteDetai
     private async Task Pin(Status.Site site, string tool, string version, string details)
     {
         var shown = tool == "root" ? SiteDetailViewModel.RootLabel(version) : version;
-        if (await Window.Confirm($"Pin {ToolName(tool)} {shown} to {site.Name}?", details + " This changes a file in your project.", "Pin"))
+        var question = tool switch
+        {
+            "php" => Strings.Sites_PinPhpQuestion,
+            "root" => Strings.Sites_PinRootQuestion,
+            _ => Strings.Sites_PinNodeQuestion
+        };
+        if (await Window.Confirm(Localization.Format(question, shown, site.Name), details + " " + Strings.Sites_ChangesAfile, Strings.Sites_Pin))
         {
             await Model.Sites.PinAsync(site.Name, tool, version);
         }
@@ -477,20 +485,16 @@ internal sealed partial class SitesPane : UserControl, ISettingsPane, ISiteDetai
 
     private async Task Unpin(Status.Site site, string tool, string details)
     {
-        if (await Window.Confirm($"Unpin {ToolName(tool)} from {site.Name}?", details + " This changes files in your project.", "Unpin"))
+        var question = tool switch
+        {
+            "php" => Strings.Sites_UnpinPhpQuestion,
+            "root" => Strings.Sites_UnpinRootQuestion,
+            _ => Strings.Sites_UnpinNodeQuestion
+        };
+        if (await Window.Confirm(Localization.Format(question, site.Name), details + " " + Strings.Sites_ChangesFiles, Strings.Sites_Unpin))
         {
             await Model.Sites.UnpinAsync(site.Name, tool);
         }
-    }
-
-    private static string ToolName(string tool)
-    {
-        return tool switch
-        {
-            "php" => "PHP",
-            "root" => "the document root",
-            _ => "Node"
-        };
     }
 
     // What the details ask of the pane (ISiteDetailHost).

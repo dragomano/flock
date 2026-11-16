@@ -23,10 +23,10 @@ internal sealed partial class SitesPane
         var form = new ShareForm();
         var dialog = new ContentDialog
         {
-            Title = $"Share {site.Name}",
+            Title = Localization.Format(Strings.Sites_Share_Title, site.Name),
             Content = form,
-            PrimaryButtonText = "Share",
-            CloseButtonText = "Cancel",
+            PrimaryButtonText = Strings.Sites_Share_Share,
+            CloseButtonText = Strings.Common_Cancel,
             DefaultButton = ContentDialogButton.Primary,
             XamlRoot = Window.XamlRoot
         };
@@ -65,7 +65,7 @@ internal sealed partial class SitesPane
     private async Task SaveQr(string data, string site)
     {
         var picker = new FileSavePicker { SuggestedFileName = Path.GetFileNameWithoutExtension(QrFileName(site)) };
-        picker.FileTypeChoices.Add("PNG image", [".png"]);
+        picker.FileTypeChoices.Add(Strings.Sites_Share_PngImage, [".png"]);
         InitializeWithWindow.Initialize(picker, Window.Hwnd);
         var file = await picker.PickSaveFileAsync();
         if (file is null)
@@ -78,7 +78,7 @@ internal sealed partial class SitesPane
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or FormatException)
         {
-            await Ui.Inform(Window.Content.XamlRoot, "Could not save the QR code", e.Message);
+            await Ui.Inform(Window.Content.XamlRoot, Strings.Sites_Share_CouldNotSaveQr, e.Message);
         }
     }
 }

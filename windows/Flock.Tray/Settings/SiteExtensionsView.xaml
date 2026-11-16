@@ -1,7 +1,8 @@
 <UserControl
     x:Class="Flock.Tray.Settings.SiteExtensionsView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:l="using:Flock.Tray">
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -21,11 +22,11 @@
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="10" Visibility="{Binding IsLoading, Converter={StaticResource BooleanVisibilityConverter}}">
                     <ProgressRing Width="16" Height="16" VerticalAlignment="Center" />
-                    <TextBlock Text="Loading…" Style="{StaticResource DetailCaptionStyle}" VerticalAlignment="Center" />
+                    <TextBlock Text="{l:Loc Key=Common_Loading}" Style="{StaticResource DetailCaptionStyle}" VerticalAlignment="Center" />
                 </StackPanel>
                 <TextBlock Text="{Binding Summary}" Style="{StaticResource DetailCaptionStyle}"
                            Visibility="{Binding HasReport, Converter={StaticResource BooleanVisibilityConverter}}" />
-                <TextBlock Text="The project requires no PHP extensions." Style="{StaticResource DetailTextStyle}"
+                <TextBlock Text="{l:Loc Key=Sites_ExtensionsNone}" Style="{StaticResource DetailTextStyle}"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                            Visibility="{Binding HasNoExtensions, Converter={StaticResource BooleanVisibilityConverter}}" />
                 <ItemsControl ItemsSource="{Binding Extensions}">
@@ -51,12 +52,12 @@
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                     <ProgressRing Width="16" Height="16" VerticalAlignment="Center"
                                                   Visibility="{Binding IsAdding, Converter={StaticResource BooleanVisibilityConverter}}" />
-                                    <HyperlinkButton Content="Cancel" Command="{Binding CancelCommand}" Padding="4,2,4,2" VerticalAlignment="Center"
+                                    <HyperlinkButton Content="{l:Loc Key=Common_Cancel}" Command="{Binding CancelCommand}" Padding="4,2,4,2" VerticalAlignment="Center"
                                                      Visibility="{Binding IsConfirming, Converter={StaticResource BooleanVisibilityConverter}}" />
-                                    <Button Content="Require" Command="{Binding RequireCommand}" Style="{StaticResource AccentButtonStyle}" VerticalAlignment="Center"
+                                    <Button Content="{l:Loc Key=Sites_Require}" Command="{Binding RequireCommand}" Style="{StaticResource AccentButtonStyle}" VerticalAlignment="Center"
                                             ToolTipService.ToolTip="{Binding RequireTooltip}"
                                             Visibility="{Binding IsConfirming, Converter={StaticResource BooleanVisibilityConverter}}" />
-                                    <Button Content="Add to composer.json…" Command="{Binding ConfirmCommand}" IsEnabled="{Binding CanAdd}" VerticalAlignment="Center"
+                                    <Button Content="{l:Loc Key=Sites_AddToComposer}" Command="{Binding ConfirmCommand}" IsEnabled="{Binding CanAdd}" VerticalAlignment="Center"
                                             Visibility="{Binding CanBeAdded, Converter={StaticResource BooleanVisibilityConverter}}" />
                                 </StackPanel>
                             </Grid>
@@ -65,7 +66,7 @@
                 </ItemsControl>
             </StackPanel>
         </ScrollViewer>
-        <TextBlock Text="Requiring an extension in composer.json makes composer install refuse a server without it, instead of the app failing there."
+        <TextBlock Text="{l:Loc Key=Sites_ExtensionsFootnote}"
                    Style="{StaticResource DetailCaptionStyle}" />
     </StackPanel>
 </UserControl>

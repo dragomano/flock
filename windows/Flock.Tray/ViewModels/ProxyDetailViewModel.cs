@@ -20,14 +20,14 @@ internal sealed partial class ProxyDetailViewModel(ISiteDetailHost host, OutputV
     public string Name => proxy.Name;
     public string Url => proxy.Url ?? "";
     public bool HasUrl => proxy.Url is not null;
-    public string OpenLabel => $"Open {proxy.Url ?? proxy.Domain}";
+    public string OpenLabel => Localization.Format(Strings.Common_OpenTarget, proxy.Url ?? proxy.Domain);
     public string Problem => proxy.Problem ?? "";
 
     // Proxy: its server, HTTPS and upstream.
     public bool Running => proxy.Running;
     public string ServerLabel => proxy.ServerLabel;
     public bool IsNotRunning => !proxy.Running;
-    public string NotRunningText => $"Nothing answers at {proxy.UpstreamLabel} yet.";
+    public string NotRunningText => Localization.Format(Strings.Sites_NothingAnswersYet, proxy.UpstreamLabel);
 
     public bool Secured
     {
@@ -46,14 +46,7 @@ internal sealed partial class ProxyDetailViewModel(ISiteDetailHost host, OutputV
     }
 
     public string Upstream => proxy.Upstream;
-    public string Note
-    {
-        get
-        {
-            var starts = proxy.Command is null ? " Flock doesn't start the server, so start it as usual, or give it commands below." : "";
-            return $"Every request passes to the upstream with its Host header, WebSocket upgrades (hot reload) included.{starts} Until it answers, {proxy.Domain} shows a page saying so.";
-        }
-    }
+    public string Note => Localization.Format(proxy.Command is null ? Strings.Sites_ProxyFootnoteNoCommands : Strings.Sites_ProxyFootnoteCommands, proxy.Domain);
 
     // Commands.
     private Status.ProxyCommand? Command => proxy.Command;

@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Flock.Kit;
 using Flock.Tray.Features.Sites;
 
 namespace Flock.Tray.ViewModels;
@@ -12,7 +13,7 @@ namespace Flock.Tray.ViewModels;
 /// </summary>
 internal sealed partial class OutputViewModel(SitesService sites, Action<string> openLog) : ObservableObject
 {
-    public const string Empty = "No output yet.";
+    public static string Empty => Strings.Sites_NoOutputYet;
 
     private string text = "";
     private bool live;

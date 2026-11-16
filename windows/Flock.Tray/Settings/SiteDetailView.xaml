@@ -2,6 +2,7 @@
     x:Class="Flock.Tray.Settings.SiteDetailView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:l="using:Flock.Tray"
     xmlns:settings="using:Flock.Tray.Settings">
     <UserControl.Resources>
         <ResourceDictionary>
@@ -22,7 +23,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <TextBlock Text="{Binding Name}" Style="{StaticResource DetailTitleStyle}" VerticalAlignment="Center" />
                         <Border Style="{StaticResource NeutralBadgeStyle}" Visibility="{Binding IsProjectFolder, Converter={StaticResource BooleanVisibilityConverter}}">
-                            <TextBlock Text="Project folder" Style="{StaticResource NeutralBadgeTextStyle}" />
+                            <TextBlock Text="{l:Loc Key=Sites_ProjectFolderBadge}" Style="{StaticResource NeutralBadgeTextStyle}" />
                         </Border>
                     </StackPanel>
                     <HyperlinkButton Content="{Binding Url}" Command="{Binding OpenCommand}" Padding="0"
@@ -35,18 +36,18 @@
                         <FontIcon Glyph="{StaticResource GlyphOpen}" Style="{StaticResource IconStyle}" />
                     </Button>
                     <Button Command="{Binding RevealCommand}" Padding="8,6,8,6" Background="Transparent" BorderThickness="0"
-                            VerticalAlignment="Center" ToolTipService.ToolTip="Show in Explorer" AutomationProperties.Name="Show in Explorer">
+                            VerticalAlignment="Center" ToolTipService.ToolTip="{l:Loc Key=Common_ShowInExplorer}" AutomationProperties.Name="{l:Loc Key=Common_ShowInExplorer}">
                         <FontIcon Glyph="{StaticResource GlyphFolder}" Style="{StaticResource IconStyle}" />
                     </Button>
                     <Button Command="{Binding ShowExtensionsCommand}" Padding="8,6,8,6" Background="Transparent" BorderThickness="0"
-                            VerticalAlignment="Center" ToolTipService.ToolTip="PHP extensions" AutomationProperties.Name="PHP extensions"
+                            VerticalAlignment="Center" ToolTipService.ToolTip="{l:Loc Key=Sites_PhpExtensions}" AutomationProperties.Name="{l:Loc Key=Sites_PhpExtensions}"
                             Visibility="{Binding IsPhp, Converter={StaticResource BooleanVisibilityConverter}}">
                         <FontIcon Glyph="{StaticResource GlyphPuzzle}" Style="{StaticResource IconStyle}" />
                     </Button>
                     <!-- Pin and unpin items appear only when there is something to pin or unpin. -->
                     <Button IsEnabled="{Binding HasMenu}" Padding="8,6,8,6" Background="Transparent" BorderThickness="0" VerticalAlignment="Center"
-                            ToolTipService.ToolTip="Pin versions and the document root to the project"
-                            AutomationProperties.Name="Pin versions and the document root to the project">
+                            ToolTipService.ToolTip="{l:Loc Key=Sites_PinMenuTooltip}"
+                            AutomationProperties.Name="{l:Loc Key=Sites_PinMenuTooltip}">
                         <FontIcon Glyph="{StaticResource GlyphMore}" Style="{StaticResource IconStyle}" />
                         <Button.Flyout>
                             <MenuFlyout>
@@ -61,13 +62,13 @@
                                                 Visibility="{Binding ShowsUnpinPhp, Converter={StaticResource BooleanVisibilityConverter}}" />
                                 <MenuFlyoutItem Text="{Binding UnpinNodeText}" Command="{Binding UnpinNodeCommand}"
                                                 Visibility="{Binding ShowsUnpinNode, Converter={StaticResource BooleanVisibilityConverter}}" />
-                                <MenuFlyoutItem Text="Unpin Document Root (.flockrc)…" Command="{Binding UnpinRootCommand}"
+                                <MenuFlyoutItem Text="{l:Loc Key=Sites_UnpinRootItem}" Command="{Binding UnpinRootCommand}"
                                                 Visibility="{Binding ShowsUnpinRoot, Converter={StaticResource BooleanVisibilityConverter}}" />
                             </MenuFlyout>
                         </Button.Flyout>
                     </Button>
                     <Button Command="{Binding RemoveCommand}" Padding="8,6,8,6" Background="Transparent" BorderThickness="0"
-                            VerticalAlignment="Center" ToolTipService.ToolTip="Remove site" AutomationProperties.Name="Remove site"
+                            VerticalAlignment="Center" ToolTipService.ToolTip="{l:Loc Key=Sites_RemoveSite}" AutomationProperties.Name="{l:Loc Key=Sites_RemoveSite}"
                             Visibility="{Binding CanRemove, Converter={StaticResource BooleanVisibilityConverter}}">
                         <FontIcon Glyph="{StaticResource GlyphDelete}" Style="{StaticResource IconStyle}" />
                     </Button>
@@ -77,17 +78,17 @@
 
             <!-- Site: its type, HTTPS, the domains besides its own and (not for a Node.js app, served by its dev server) the document root. -->
             <StackPanel Style="{StaticResource DetailSectionStyle}">
-                <TextBlock Text="Site" Style="{StaticResource DetailHeadingStyle}" />
-                <settings:DetailField Label="Type">
-                    <ComboBox MinWidth="140" SelectedIndex="{Binding TypeIndex, Mode=TwoWay}" AutomationProperties.Name="Type">
-                        <ComboBoxItem Content="PHP" />
-                        <ComboBoxItem Content="Node.js" />
+                <TextBlock Text="{l:Loc Key=Sites_Site}" Style="{StaticResource DetailHeadingStyle}" />
+                <settings:DetailField Label="{l:Loc Key=Sites_Type}">
+                    <ComboBox MinWidth="140" SelectedIndex="{Binding TypeIndex, Mode=TwoWay}" AutomationProperties.Name="{l:Loc Key=Sites_Type}">
+                        <ComboBoxItem Content="{l:Loc Key=Common_Php}" />
+                        <ComboBoxItem Content="{l:Loc Key=Common_Nodejs}" />
                     </ComboBox>
                 </settings:DetailField>
-                <settings:DetailField Label="HTTPS">
-                    <ToggleSwitch IsOn="{Binding Secured, Mode=TwoWay}" MinWidth="0" AutomationProperties.Name="HTTPS" />
+                <settings:DetailField Label="{l:Loc Key=Common_Https}">
+                    <ToggleSwitch IsOn="{Binding Secured, Mode=TwoWay}" MinWidth="0" AutomationProperties.Name="{l:Loc Key=Common_Https}" />
                 </settings:DetailField>
-                <settings:DetailField Label="Domains" LabelAlignment="Top">
+                <settings:DetailField Label="{l:Loc Key=Sites_Domains}" LabelAlignment="Top">
                     <StackPanel Spacing="2">
                         <ItemsControl ItemsSource="{Binding Domains}" Visibility="{Binding HasDomains, Converter={StaticResource BooleanVisibilityConverter}}">
                             <ItemsControl.ItemsPanel>
@@ -116,15 +117,15 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                        <HyperlinkButton Content="Add Domain…" Command="{Binding AddDomainCommand}" Padding="0" />
+                        <HyperlinkButton Content="{l:Loc Key=Sites_AddDomain}" Command="{Binding AddDomainCommand}" Padding="0" />
                     </StackPanel>
                 </settings:DetailField>
                 <TextBlock Text="{Binding WildcardNote}" Style="{StaticResource DetailCautionStyle}"
                            Visibility="{Binding ShowsWildcardNote, Converter={StaticResource BooleanVisibilityConverter}}" />
                 <StackPanel Spacing="8" Visibility="{Binding IsPhp, Converter={StaticResource BooleanVisibilityConverter}}">
-                    <settings:DetailField Label="Root">
+                    <settings:DetailField Label="{l:Loc Key=Sites_Root}">
                         <ComboBox MinWidth="190" ItemsSource="{Binding RootItems}" SelectedIndex="{Binding RootIndex, Mode=TwoWay}"
-                                  AutomationProperties.Name="Document root" ToolTipService.ToolTip="{Binding RootTooltip}" />
+                                  AutomationProperties.Name="{l:Loc Key=Sites_DocumentRoot}" ToolTipService.ToolTip="{Binding RootTooltip}" />
                     </settings:DetailField>
                     <ItemsControl ItemsSource="{Binding RootHints}" ItemTemplate="{StaticResource HintTemplate}"
                                   Visibility="{Binding HasRootHints, Converter={StaticResource BooleanVisibilityConverter}}">
@@ -137,7 +138,7 @@
                     <TextBlock Text="{Binding RootEmptyNote}" Style="{StaticResource DetailNoteStyle}"
                                Visibility="{Binding RootEmptyNote, Converter={StaticResource StringVisibilityConverter}}" />
                     <TextBlock Style="{StaticResource DetailNoteStyle}"
-                               Text="The folder Flock serves the site from. One picked here applies on this machine only; pin it (…) to write it into .flockrc for everyone." />
+                               Text="{l:Loc Key=Sites_RootFootnote}" />
                 </StackPanel>
             </StackPanel>
 
@@ -145,12 +146,12 @@
 
             <!-- Versions: PHP and Node.js, with what pins or isolates them (a Node.js app has no PHP). -->
             <StackPanel Style="{StaticResource DetailSectionStyle}">
-                <TextBlock Text="Versions" Style="{StaticResource DetailHeadingStyle}" />
-                <settings:DetailField Label="PHP" Visibility="{Binding IsPhp, Converter={StaticResource BooleanVisibilityConverter}}">
+                <TextBlock Text="{l:Loc Key=Versions_Versions}" Style="{StaticResource DetailHeadingStyle}" />
+                <settings:DetailField Label="{l:Loc Key=Common_Php}" Visibility="{Binding IsPhp, Converter={StaticResource BooleanVisibilityConverter}}">
                     <ComboBox MinWidth="190" ItemsSource="{Binding Php.Items}" SelectedIndex="{Binding Php.SelectedIndex, Mode=TwoWay}"
                               ToolTipService.ToolTip="{Binding Php.Tooltip}" />
                 </settings:DetailField>
-                <settings:DetailField Label="Node.js">
+                <settings:DetailField Label="{l:Loc Key=Common_Nodejs}">
                     <ComboBox MinWidth="190" ItemsSource="{Binding Node.Items}" SelectedIndex="{Binding Node.SelectedIndex, Mode=TwoWay}"
                               ToolTipService.ToolTip="{Binding Node.Tooltip}" />
                 </settings:DetailField>
@@ -170,7 +171,7 @@
                 <settings:SiteServerSection DataContext="{Binding Server}" />
                 <settings:ReverbSection DataContext="{Binding Reverb}" />
                 <StackPanel Style="{StaticResource DetailSectionStyle}" Visibility="{Binding ShowsBoost, Converter={StaticResource BooleanVisibilityConverter}}">
-                    <TextBlock Text="Laravel Boost" Style="{StaticResource DetailHeadingStyle}" />
+                    <TextBlock Text="{l:Loc Key=Common_LaravelBoost}" Style="{StaticResource DetailHeadingStyle}" />
                     <StackPanel Spacing="2">
                         <TextBlock Text="{Binding BoostText}" Style="{StaticResource DetailCaptionStyle}" />
                         <HyperlinkButton Content="{Binding BoostAction}" Command="{Binding AddBoostGuidelineCommand}" Padding="0" />
@@ -183,7 +184,7 @@
 
             <!-- Last, so screenshots and the docs find it at the end of the details. -->
             <StackPanel Style="{StaticResource DetailSectionStyle}">
-                <TextBlock Text="Worktrees" Style="{StaticResource DetailHeadingStyle}" />
+                <TextBlock Text="{l:Loc Key=Worktrees_Worktrees}" Style="{StaticResource DetailHeadingStyle}" />
                 <ItemsControl ItemsSource="{Binding Worktrees}"
                               Visibility="{Binding HasNoWorktrees, Converter={StaticResource InverseBooleanVisibilityConverter}}">
                     <ItemsControl.ItemsPanel>
@@ -209,7 +210,7 @@
                                         <ProgressRing Width="12" Height="12" VerticalAlignment="Center" />
                                         <TextBlock Text="{Binding Step}" Style="{StaticResource DetailCaptionLineStyle}" VerticalAlignment="Center" />
                                     </StackPanel>
-                                    <TextBlock Text="Setup failed" Style="{StaticResource DetailCaptionLineStyle}" Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                    <TextBlock Text="{l:Loc Key=Worktrees_SetupFailed}" Style="{StaticResource DetailCaptionLineStyle}" Foreground="{ThemeResource SystemFillColorCriticalBrush}"
                                                Visibility="{Binding IsFailed, Converter={StaticResource BooleanVisibilityConverter}}" />
                                     <Border Style="{StaticResource NeutralBadgeStyle}"
                                             Visibility="{Binding HasOwnDatabase, Converter={StaticResource BooleanVisibilityConverter}}">
@@ -225,7 +226,7 @@
                 <Button Command="{Binding NewWorktreeCommand}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="{StaticResource GlyphAdd}" Style="{StaticResource IconStyle}" VerticalAlignment="Center" />
-                        <TextBlock Text="New Worktree…" VerticalAlignment="Center" />
+                        <TextBlock Text="{l:Loc Key=Worktrees_New}" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
             </StackPanel>

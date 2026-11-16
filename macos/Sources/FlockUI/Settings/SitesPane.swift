@@ -662,7 +662,7 @@ struct SitesPane: View {
                 section("sites.server") {
                     serverFields(site)
                 }
-                section("Reverb") {
+                section("sites.reverb.title") {
                     reverbFields(site)
                 }
             }
@@ -961,8 +961,8 @@ struct SitesPane: View {
     private func reverbFields(_ site: Status.Site) -> some View {
         let store = model.settings
         let address = "\(site.secured ? "wss" : "ws")://\(site.domain)/app"
-        field("Run Reverb") {
-            Toggle("Run Reverb", isOn: Binding(
+        field("sites.reverb.run") {
+            Toggle("sites.reverb.run", isOn: Binding(
                 get: { site.reverb != nil },
                 set: { on in Task { await store.perform { _ = try await $0.updateSite(site.name, SiteChange(reverb: on)) } } }
             ))
@@ -978,9 +978,9 @@ struct SitesPane: View {
             if !reverb.env.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 8) {
-                        Text("The app's .env needs:")
+                        Text("sites.reverb.env_needs")
                             .font(.caption).foregroundStyle(.secondary)
-                        Button("Copy") {
+                        Button("common.copy") {
                             NSPasteboard.general.clearContents()
                             NSPasteboard.general.setString(reverb.env.joined(separator: "\n"), forType: .string)
                         }
@@ -994,7 +994,7 @@ struct SitesPane: View {
             }
 
             HStack(spacing: 8) {
-                Button("Restart") {
+                Button("menu.restart") {
                     restartingReverb = site.name
                     Task {
                         await store.perform { _ = try await $0.restartReverb(site.name) }
@@ -1002,7 +1002,7 @@ struct SitesPane: View {
                     }
                 }
                 .disabled(reverb.state != .running || restartingReverb == site.name)
-                .help("Restart Reverb, e.g. so it loads changed code")
+                .help("sites.reverb.restart_tooltip")
                 if restartingReverb == site.name {
                     ProgressView().controlSize(.mini)
                 }
@@ -1011,13 +1011,13 @@ struct SitesPane: View {
 
             ServerOutput(log: reverb.log.isEmpty ? "reverb-\(site.name)" : reverb.log, live: reverb.state == .running)
 
-            Text("WebSocket connections under /app and Laravel's broadcasts under /apps go to Reverb; every other request stays the app's. Flock doesn't change the project's .env. Rebuild the front end after changing it.")
+            Text("sites.reverb.footnote")
                 .font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         } else {
             Text(site.reverbAvailable
-                 ? "Flock runs php artisan reverb:start for the site. Browsers reach it at \(address), with no port or certificate of its own."
-                 : "Install Laravel Reverb in the project (php artisan install:broadcasting --reverb) to run it.")
+                 ? "sites.reverb.explanation \(address)"
+                 : "sites.reverb.install")
                 .font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -1030,12 +1030,12 @@ struct SitesPane: View {
         case .running:
             HStack(spacing: 6) {
                 StateDot(color: StateDot.running)
-                Text("Running at \(address)").textSelection(.enabled)
+                Text("sites.reverb.running_at \(address)").textSelection(.enabled)
             }
         case .failed:
             HStack(spacing: 6) {
                 StateDot(color: StateDot.failed)
-                Text(reverb.problem.isEmpty ? "Failed" : reverb.problem)
+                Text(reverb.problem.isEmpty ? String(localized: "sites.server.failed") : reverb.problem)
                     .textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)
             }

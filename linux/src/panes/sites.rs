@@ -1029,17 +1029,15 @@ impl Inner {
     fn reverb_group(self: &Rc<Self>, site: &SiteStatus) -> adw::PreferencesGroup {
         let address = site.reverb_url();
         let footer = if site.reverb.is_some() {
-            "WebSocket connections under /app and Laravel's broadcasts under /apps go to Reverb; every other request stays the app's. Flock doesn't change the project's .env. Rebuild the front end after changing it.".to_owned()
+            tr!("sites.reverb.footnote").to_owned()
         } else if site.reverb_available {
-            format!(
-                "Flock runs php artisan reverb:start for the site. Browsers reach it at {address}, with no port or certificate of its own."
-            )
+            tr!("sites.reverb.explanation", address = address)
         } else {
-            "Install Laravel Reverb in the project (php artisan install:broadcasting --reverb) to run it.".to_owned()
+            tr!("sites.reverb.install").to_owned()
         };
-        let group = group("Reverb", &footer);
+        let group = group(tr!("sites.reverb.title"), &footer);
         let (this, name) = (self.clone(), site.name.clone());
-        let run = switch_row("Run Reverb", "", site.reverb.is_some(), move |on| {
+        let run = switch_row(tr!("sites.reverb.run"), "", site.reverb.is_some(), move |on| {
             this.change(&name, SiteChange { reverb: Some(on), ..Default::default() });
         });
         run.set_sensitive(site.reverb_available || site.reverb.is_some());
@@ -1047,9 +1045,9 @@ impl Inner {
         let Some(reverb) = &site.reverb else { return group };
 
         let (text, dot, class) = match reverb.state.as_str() {
-            "running" => (format!("Running at {address}"), "success", ""),
+            "running" => (tr!("sites.reverb.running_at", address = address), "success", ""),
             "unavailable" => (reverb.problem.clone(), "warning", "warning"),
-            _ if reverb.problem.is_empty() => ("Failed".to_owned(), "error", ""),
+            _ if reverb.problem.is_empty() => (tr!("sites.server.failed").to_owned(), "error", ""),
             _ => (reverb.problem.clone(), "error", ""),
         };
         let state = adw::ActionRow::builder().title(glib::markup_escape_text(&text)).build();
@@ -1062,17 +1060,17 @@ impl Inner {
             state.add_suffix(&gtk::Spinner::builder().spinning(true).build());
         }
         let (this, name) = (self.clone(), site.name.clone());
-        let restart = button("Restart", false, move || this.restart_reverb(&name));
+        let restart = button(tr!("menu.restart"), false, move || this.restart_reverb(&name));
         restart.set_sensitive(reverb.running() && !restarting);
-        restart.set_tooltip_text(Some("Restart Reverb, e.g. so it loads changed code"));
+        restart.set_tooltip_text(Some(tr!("sites.reverb.restart_tooltip")));
         state.add_suffix(&restart);
         group.add(&state);
 
         if !reverb.env.is_empty() {
             let env = reverb.env.join("\n");
             let lines = code_block(&env);
-            let row = adw::ActionRow::builder().title("The app's .env needs:").build();
-            row.add_suffix(&button("Copy", false, {
+            let row = adw::ActionRow::builder().title(tr!("sites.reverb.env_needs")).build();
+            row.add_suffix(&button(tr!("common.copy"), false, {
                 let row = row.clone();
                 move || row.clipboard().set_text(&env)
             }));
