@@ -424,7 +424,8 @@ internal sealed partial class SitesPane : UserControl, ISettingsPane, ISiteDetai
     private async Task ShowExtensions(Status.Site site)
     {
         var token = activeLifetime?.Token ?? CancellationToken.None;
-        var extensions = new SiteExtensionsViewModel(Model.Sites, site, add => Start("extensions:" + site.Name, add), token);
+        // Its own key: the dialog runs under "extensions:<site>" until it's closed.
+        var extensions = new SiteExtensionsViewModel(Model.Sites, site, add => Start("extensions-add:" + site.Name, add), token);
         var dialog = new ContentDialog
         {
             Title = Localization.Format(Strings.Sites_ExtensionsTitle, site.Name),
