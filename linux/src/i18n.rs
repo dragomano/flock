@@ -111,9 +111,7 @@ pub fn resolve(preference: &str, env: impl Fn(&str) -> Option<String>) -> &'stat
     }
     // A LANGUAGE list stands in for the locale's language, it doesn't come before it.
     let list = env("LANGUAGE").filter(|list| !list.is_empty()).unwrap_or(locale);
-    list.split(':')
-        .find_map(|tag| LANGUAGES.iter().find(|(code, _)| *code == primary(tag)).map(|(code, _)| *code))
-        .unwrap_or("en")
+    list.split(':').find_map(|tag| LANGUAGES.iter().find(|(code, _)| *code == primary(tag)).map(|(code, _)| *code)).unwrap_or("en")
 }
 
 fn catalog(language: &str) -> Option<Catalog> {
