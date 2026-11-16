@@ -242,7 +242,7 @@ internal sealed partial class ReverbSectionViewModel(ISiteDetailHost host, Outpu
 {
     private Status.Site site = new();
     private Status.SiteReverb? reverb;
-    private string scheme = "ws";
+    private string address = "";
     private bool restarting;
     private bool shown;
 
@@ -264,17 +264,14 @@ internal sealed partial class ReverbSectionViewModel(ISiteDetailHost host, Outpu
         }
     }
 
-    /// <summary>Where browsers reach Reverb: wss://app.test/app.</summary>
-    private string Address => $"{scheme}://{site.Domain}/app";
-
     public bool CanToggle => site.ReverbAvailable || reverb is not null;
     public bool IsOff => reverb is null;
     public string OffNote => site.ReverbAvailable
-        ? Localization.Format(Strings.Sites_Reverb_Explanation, Address)
+        ? Localization.Format(Strings.Sites_Reverb_Explanation, address)
         : Strings.Sites_Reverb_Install;
     public bool HasReverb => reverb is not null;
     public bool IsRunning => reverb?.State == Status.ReverbState.Running;
-    public string RunningText => Localization.Format(Strings.Sites_Reverb_RunningAt, Address);
+    public string RunningText => Localization.Format(Strings.Sites_Reverb_RunningAt, address);
     public bool IsFailed => reverb?.State == Status.ReverbState.Failed;
     public string FailedText => reverb is { Problem.Length: > 0 } ? reverb.Problem : Strings.Sites_Server_Failed;
     public bool IsUnavailable => reverb is not null && !IsRunning && !IsFailed;
@@ -292,7 +289,7 @@ internal sealed partial class ReverbSectionViewModel(ISiteDetailHost host, Outpu
     {
         site = value;
         reverb = value.Reverb;
-        scheme = (row?.Secured ?? value.Secured) ? "wss" : "ws";
+        address = AddressOf(value, row?.Secured ?? value.Secured);
         restarting = isRestarting;
         shown = reverb is not null;
         Refresh();
@@ -303,6 +300,27 @@ internal sealed partial class ReverbSectionViewModel(ISiteDetailHost host, Outpu
     {
         var name = site.Name;
         host.Start(name, () => host.RestartReverbAsync(name));
+    }
+
+    /// <summary>
+    ///     Where browsers reach the site's Reverb server: the site's address as a WebSocket one,
+    ///     wss://app.test/app (with its port when Flock serves another than 443), ws:// without HTTPS.
+    ///     While HTTPS is being switched (secured differs from the site's), the address it will have.
+    /// </summary>
+    internal static string AddressOf(Status.Site site, bool secured)
+    {
+        if (secured == site.Secured && site.Url is { } url)
+        {
+            if (url.StartsWith("https://", StringComparison.Ordinal))
+            {
+                return $"wss://{url["https://".Length..].TrimEnd('/')}/app";
+            }
+            if (url.StartsWith("http://", StringComparison.Ordinal))
+            {
+                return $"ws://{url["http://".Length..].TrimEnd('/')}/app";
+            }
+        }
+        return $"{(secured ? "wss" : "ws")}://{site.Domain}/app";
     }
 
     [RelayCommand]

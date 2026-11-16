@@ -160,6 +160,15 @@ public sealed class SiteDetailTests : IDisposable
     }
 
     [Fact]
+    public void ReverbsAddressIsTheSitesWithItsPort()
+    {
+        var site = new Status.Site { Name = "shop", Domain = "shop.test", Secured = true, Url = "https://shop.test:8443" };
+        Assert.Equal("wss://shop.test:8443/app", ReverbSectionViewModel.AddressOf(site, true));
+        Assert.Equal("ws://shop.test/app", ReverbSectionViewModel.AddressOf(site, false)); // HTTPS being switched off
+        Assert.Equal("ws://shop.test:8080/app", ReverbSectionViewModel.AddressOf(new Status.Site { Domain = "shop.test", Url = "http://shop.test:8080" }, false));
+    }
+
+    [Fact]
     public void ReverbShowsItsStateEnvAndOutput()
     {
         var detail = new SiteDetailViewModel(host, output);

@@ -1244,9 +1244,14 @@ impl SiteStatus {
         }
     }
 
-    /// Where browsers reach the site's Reverb server: wss://acme.test/app, ws:// without HTTPS.
+    /// Where browsers reach the site's Reverb server: the site's address as a WebSocket one,
+    /// wss://acme.test/app (with its port when Flock serves another than 443), ws:// without HTTPS.
     pub fn reverb_url(&self) -> String {
-        format!("{}://{}/app", if self.secured { "wss" } else { "ws" }, self.domain)
+        match self.url.as_deref() {
+            Some(url) if url.starts_with("https://") => format!("wss://{}/app", url["https://".len()..].trim_end_matches('/')),
+            Some(url) if url.starts_with("http://") => format!("ws://{}/app", url["http://".len()..].trim_end_matches('/')),
+            _ => format!("{}://{}/app", if self.secured { "wss" } else { "ws" }, self.domain),
+        }
     }
 }
 
@@ -1740,7 +1745,9 @@ mod tests {
             {"name":"blog","domain":"blog.test","path":"/home/a/blog","php":"8.4",
               "reverb":{"state":"unavailable","port":0,"problem":"Laravel Reverb isn't installed in the project","log":"reverb-blog"}},
             {"name":"shop","domain":"shop.test","path":"/home/a/shop","php":"8.4"}]}"#;
-        let status: Status = serde_json::from_str(json).unwrap();
+        let mut status: Status = serde_json::from_str(json).unwrap();
+        status.sites[2].url = Some("https://shop.test:8443".to_owned());
+        assert_eq!(status.sites[2].reverb_url(), "wss://shop.test:8443/app");
         let acme = &status.sites[0];
         assert!(acme.reverb_available);
         let reverb = acme.reverb.as_ref().unwrap();

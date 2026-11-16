@@ -960,7 +960,7 @@ struct SitesPane: View {
     @ViewBuilder
     private func reverbFields(_ site: Status.Site) -> some View {
         let store = model.settings
-        let address = "\(site.secured ? "wss" : "ws")://\(site.domain)/app"
+        let address = reverbAddress(site)
         field("sites.reverb.run") {
             Toggle("sites.reverb.run", isOn: Binding(
                 get: { site.reverb != nil },
@@ -1021,6 +1021,16 @@ struct SitesPane: View {
                 .font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    /// Where browsers reach the site's Reverb server: the site's address as a WebSocket one,
+    /// wss://acme.test/app (with its port when Flock serves another than 443), ws:// without HTTPS.
+    private func reverbAddress(_ site: Status.Site) -> String {
+        if let url = site.url {
+            if url.hasPrefix("https://") { return "wss://\(url.dropFirst(8))/app" }
+            if url.hasPrefix("http://") { return "ws://\(url.dropFirst(7))/app" }
+        }
+        return "\(site.secured ? "wss" : "ws")://\(site.domain)/app"
     }
 
     /// The Reverb server: running at its address, why it stopped, or why it can't run.
