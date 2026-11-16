@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"fmt"
+	"strings"
 
 	"flock/internal/api"
 	"flock/internal/config"
@@ -68,6 +69,35 @@ func (d *daemon) reverbSite(cfg *config.Config, site config.Site, minor, scheme 
 		return fail(api.ReverbFailed, "%s", ports.Describe(site.ReverbPort))
 	}
 	return &spec, st
+}
+
+// liveReverb corrects the Reverb servers status reports as running whose process has exited
+// since the last reload: the supervisor starts it again with backoff, and until it's back up
+// the site shows why it exited.
+func (d *daemon) liveReverb(sites []api.SiteStatus) {
+	procs := map[string]supervisor.ProcStatus{}
+	for _, p := range d.procs.Status() {
+		procs[p.Name] = p
+	}
+	for i, s := range sites {
+		if s.Reverb == nil || s.Reverb.State != api.ReverbRunning {
+			continue
+		}
+		if p, ok := procs[s.Reverb.Log]; ok && !p.Up && p.Restarts > 0 {
+			r := *s.Reverb
+			r.State, r.Problem = api.ReverbFailed, reverbExitProblem(p.LastErr, r.Log)
+			sites[i].Reverb = &r
+		}
+	}
+}
+
+// reverbExitProblem says why a Reverb server exited, from its process's last error.
+func reverbExitProblem(lastErr, log string) string {
+	lastErr = strings.TrimPrefix(strings.TrimPrefix(lastErr, "<nil>"), ": ")
+	if lastErr == "" {
+		return fmt.Sprintf("Reverb exited — see `flock logs %s`", log)
+	}
+	return lastErr
 }
 
 // RestartReverb implements api.Backend: it restarts a site's Reverb server, e.g. so it loads

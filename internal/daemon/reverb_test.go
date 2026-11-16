@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"flock/internal/api"
 	"flock/internal/config"
@@ -81,6 +82,39 @@ func TestReleasingAPHPVersionStopsTheReverbServersOnIt(t *testing.T) {
 		"reverb-app": false, "reverb-old": false, "frankenphp-off": true}
 	if !maps.Equal(keep, want) {
 		t.Errorf("keep all = %v, want %v", keep, want)
+	}
+}
+
+func TestAReverbServerThatExitedIsNoLongerRunning(t *testing.T) {
+	d := &daemon{procs: supervisor.New()}
+	t.Cleanup(d.procs.StopAll)
+	log := filepath.Join(t.TempDir(), "reverb-app.log")
+	d.procs.Ensure(supervisor.Spec{Name: "reverb-app", Path: os.Args[0], Args: []string{"flock-test-exit"}, LogFile: log})
+	running := func() []api.SiteStatus {
+		return []api.SiteStatus{
+			{Name: "app", Reverb: &api.SiteReverb{State: api.ReverbRunning, Log: "reverb-app"}},
+			{Name: "other", Reverb: &api.SiteReverb{State: api.ReverbRunning, Log: "reverb-other"}},
+		}
+	}
+
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		sites := running()
+		d.liveReverb(sites)
+		if sites[0].Reverb.State == api.ReverbFailed {
+			if !strings.Contains(sites[0].Reverb.Problem, "Cannot find module") {
+				t.Errorf("problem = %q", sites[0].Reverb.Problem)
+			}
+			// A server the supervisor doesn't know (yet) keeps the state the reload found.
+			if sites[1].Reverb.State != api.ReverbRunning {
+				t.Errorf("other = %+v", sites[1].Reverb)
+			}
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("still running: %+v", sites[0].Reverb)
+		}
+		time.Sleep(50 * time.Millisecond)
 	}
 }
 

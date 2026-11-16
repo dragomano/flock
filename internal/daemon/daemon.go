@@ -1181,6 +1181,7 @@ func (d *daemon) Status() api.Status {
 		Warnings:  d.warnings,
 	}
 	d.liveNodeSites(st.Sites)
+	d.liveReverb(st.Sites)
 	if d.mail != nil {
 		st.Mail = d.mail.Addr()
 	}
