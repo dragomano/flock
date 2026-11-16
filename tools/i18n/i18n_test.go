@@ -255,6 +255,26 @@ func TestReportsProblems(t *testing.T) {
 			want:  `"Aktualizovat" has other placeholders than the English`,
 		},
 		{
+			name:  "a stray brace in a translation",
+			files: map[string]string{"lang/cs/app.json": strings.Replace(sampleCS, `"few": "{n} weby"`, `"few": "{n} weby {"`, 1)},
+			want:  `a brace that isn't a {placeholder} in "{n} weby {"`,
+		},
+		{
+			name:  "an installer message of two lines",
+			files: map[string]string{"lang/cs/app.json": strings.Replace(sampleCS, "nainstalována: {reason}", `nainstalována: {reason}\n[Setup]`, 1)},
+			want:  "installer messages are one line",
+		},
+		{
+			name:  "a catalog that ends with the wrong bracket",
+			files: map[string]string{"lang/cs/app.json": strings.TrimSuffix(sampleCS, "}") + "]"},
+			want:  "the object doesn't end with }",
+		},
+		{
+			name:  "a catalog with something after it",
+			files: map[string]string{"lang/cs/app.json": sampleCS + "{}"},
+			want:  "something follows the object",
+		},
+		{
 			name:  "a missing plural form",
 			files: map[string]string{"lang/cs/app.json": strings.Replace(sampleCS, `"few": "{n} weby", `, "", 1)},
 			want:  `no "few" form`,
