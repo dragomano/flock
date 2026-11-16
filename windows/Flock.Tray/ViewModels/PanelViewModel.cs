@@ -26,6 +26,7 @@ public sealed class PanelViewModel : ObservableObject, IDisposable
         xdebug = new DaemonSwitch(() => OnPropertyChanged(nameof(Xdebug)));
         dumps = new DaemonSwitch(() => OnPropertyChanged(nameof(Dumps)));
         model.Changed += ModelChanged;
+        model.UpdateChanged += UpdateChanged;
         model.Dumps.Changed += DumpsChanged;
         ToggleDumpsCommand = new AsyncRelayCommand<bool>(SetDumpsAsync, _ => !model.Dumps.IsCaptureBusy);
         ToggleXdebugCommand = new AsyncRelayCommand<bool>(SetXdebugAsync);
@@ -177,6 +178,7 @@ public sealed class PanelViewModel : ObservableObject, IDisposable
         }
         released = true;
         model.Changed -= ModelChanged;
+        model.UpdateChanged -= UpdateChanged;
         model.Dumps.Changed -= DumpsChanged;
     }
 
@@ -196,20 +198,13 @@ public sealed class PanelViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(NeedsSetup));
         OnPropertyChanged(nameof(Headline));
         OnPropertyChanged(nameof(DisplayName));
-        OnPropertyChanged(nameof(AvailableUpdate));
-        OnPropertyChanged(nameof(UpdateState));
         OnPropertyChanged(nameof(HasStatusContent));
         OnPropertyChanged(nameof(HasSites));
         OnPropertyChanged(nameof(NotRunningMessage));
         OnPropertyChanged(nameof(HasActionError));
-        OnPropertyChanged(nameof(HasUpdate));
-        OnPropertyChanged(nameof(IsUpdateBusy));
-        OnPropertyChanged(nameof(CanInstallUpdate));
-        OnPropertyChanged(nameof(UpdateMessage));
         OnPropertyChanged(nameof(MailCount));
         OnPropertyChanged(nameof(DumpCount));
         OnPropertyChanged(nameof(RestartVisibility));
-        OnPropertyChanged(nameof(UpdateVisibility));
         OnPropertyChanged(nameof(StatusContentVisibility));
         OnPropertyChanged(nameof(WarningsVisibility));
         OnPropertyChanged(nameof(SitesVisibility));
@@ -226,6 +221,18 @@ public sealed class PanelViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(RestartEnabled));
         RestartCommand.NotifyCanExecuteChanged();
         ToggleDumpsCommand.NotifyCanExecuteChanged();
+    }
+
+    // Update progress has its own event: on the shared one every download tick would redraw the whole panel.
+    private void UpdateChanged()
+    {
+        OnPropertyChanged(nameof(AvailableUpdate));
+        OnPropertyChanged(nameof(UpdateState));
+        OnPropertyChanged(nameof(HasUpdate));
+        OnPropertyChanged(nameof(IsUpdateBusy));
+        OnPropertyChanged(nameof(CanInstallUpdate));
+        OnPropertyChanged(nameof(UpdateMessage));
+        OnPropertyChanged(nameof(UpdateVisibility));
         InstallUpdateCommand.NotifyCanExecuteChanged();
     }
 

@@ -3,7 +3,11 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:Flock.Tray.Controls"
+    xmlns:settings="using:Flock.Tray.Settings"
     xmlns:l="using:Flock.Tray">
+    <UserControl.Resources>
+        <settings:InverseBooleanVisibilityConverter x:Key="InverseBooleanVisibilityConverter" />
+    </UserControl.Resources>
     <StackPanel Spacing="0">
         <StackPanel Spacing="4" Margin="0,0,0,24">
             <TextBlock Text="{l:Loc Key=General_Daemon}" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="1,0,0,6" />
@@ -101,7 +105,28 @@
         <StackPanel x:Name="LanguageHost" />
         <StackPanel Spacing="4" Margin="0,0,0,24">
             <TextBlock Text="{l:Loc Key=General_Updates}" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="1,0,0,6" />
-            <StackPanel x:Name="UpdateHost" Spacing="4" />
+            <Border Style="{StaticResource CardStyle}">
+                <Grid Style="{StaticResource SettingRowStyle}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="1">
+                        <TextBlock Text="Flock" />
+                        <TextBlock Text="{Binding UpdateDescription}" Style="{StaticResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center"
+                                Visibility="{Binding UpdateActionsVisibility}">
+                        <ProgressRing Width="16" Height="16" IsActive="{Binding IsUpdateBusy}" Visibility="{Binding UpdateProgressVisibility}" />
+                        <HyperlinkButton Content="{l:Loc Key=General_ReleaseNotes}" Padding="4,2" Click="ReleaseNotesClicked"
+                                         Visibility="{Binding ReleaseNotesVisibility}" />
+                        <Button Content="{l:Loc Key=General_CheckForUpdates}" Command="{Binding UpdateCommand}"
+                                Visibility="{Binding CheckForUpdatesVisibility}" />
+                        <Button Content="{Binding UpdateToText}" Command="{Binding UpdateCommand}" Style="{StaticResource AccentButtonStyle}"
+                                Visibility="{Binding UpdateToVisibility}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
             <Border Style="{StaticResource CardStyle}" Visibility="{Binding ConfigVisibility}">
                 <Grid Style="{StaticResource SettingRowStyle}">
                     <Grid.ColumnDefinitions>
@@ -124,9 +149,11 @@
             <TextBlock Text="{l:Loc Key=General_ProjectFolders}" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="1,0,0,6" />
             <Border Style="{StaticResource CardStyle}" Padding="8">
                 <StackPanel Spacing="4">
-                    <TextBlock x:Name="NoParked" Text="{l:Loc Key=General_NoProjectFolders}" Visibility="Collapsed" Style="{StaticResource CaptionTextBlockStyle}"
+                    <TextBlock Text="{l:Loc Key=General_NoProjectFolders}" Visibility="{Binding HasParked, Converter={StaticResource InverseBooleanVisibilityConverter}}"
+                               Style="{StaticResource CaptionTextBlockStyle}"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                    <ListView x:Name="Parked" ItemsSource="{Binding Config.Parked}" SelectionChanged="ParkedSelectionChanged" SelectionMode="Single" MinHeight="60">
+                    <ListView x:Name="Parked" ItemsSource="{Binding Config.Parked}" SelectedItem="{Binding SelectedParked, Mode=TwoWay}" SelectionMode="Single"
+                              MinHeight="60">
                         <ListView.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal" Spacing="10">
@@ -138,7 +165,7 @@
                     </ListView>
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <Button x:Name="AddParked" Content="{l:Loc Key=General_AddProjectFolders}" Click="AddParkedClicked" />
-                        <Button x:Name="RemoveParked" Content="{l:Loc Key=Common_Remove}" Click="RemoveParkedClicked" IsEnabled="False" />
+                        <Button Content="{l:Loc Key=Common_Remove}" Click="RemoveParkedClicked" IsEnabled="{Binding HasSelectedParked}" />
                     </StackPanel>
                 </StackPanel>
             </Border>
