@@ -1015,9 +1015,7 @@ struct SitesPane: View {
                 .font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         } else {
-            Text(site.reverbAvailable
-                 ? "sites.reverb.explanation \(address)"
-                 : "sites.reverb.install")
+            (site.reverbAvailable ? Text("sites.reverb.explanation \(address)") : Text("sites.reverb.install"))
                 .font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
