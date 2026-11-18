@@ -457,10 +457,10 @@
         <value>Журналы</value>
     </data>
     <data name="Dumps_EventKind_Queries" xml:space="preserve">
-        <value>Запросы</value>
+        <value>SQL-запросы</value>
     </data>
     <data name="Dumps_EventKind_Requests" xml:space="preserve">
-        <value>Запросы</value>
+        <value>HTTP-запросы</value>
     </data>
     <data name="Dumps_EventKind_Views" xml:space="preserve">
         <value>Представления</value>
@@ -853,7 +853,7 @@
         <value>Захват дампов</value>
     </data>
     <data name="Menu_Down" xml:space="preserve">
-        <value>вниз</value>
+        <value>не работает</value>
     </data>
     <data name="Menu_Dumps" xml:space="preserve">
         <value>Дампы</value>
@@ -1159,7 +1159,7 @@
         <value>Также удалить его базы данных ({0})</value>
     </data>
     <data name="Services_Postgres_ClientTools" xml:space="preserve">
-        <value>psql, pg_dump и другие инструменты командной строки поставляются с PostgreSQL. В терминале Flock использует инструменты новейшей установленной версии, которые работают с каждой версией выше и с удалёнными серверами.</value>
+        <value>psql, pg_dump и другие инструменты командной строки поставляются с PostgreSQL. В терминале Flock использует инструменты новейшей установленной версии, которые работают с версиями, перечисленными выше, а также с удалёнными серверами этих версий.</value>
     </data>
     <data name="Services_Postgres_CreatingCluster" xml:space="preserve">
         <value>Загрузка и создание кластера базы данных…</value>

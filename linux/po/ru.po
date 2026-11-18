@@ -155,10 +155,10 @@ msgid "common.downloading"
 msgstr "Загрузка…"
 
 msgid "common.e_b"
-msgstr "%e %b"
+msgstr "%d.%m"
 
 msgid "common.e_b_y_h_m"
-msgstr "%e %b %Y, %H:%M:%S"
+msgstr "%d.%m.%Y, %H:%M:%S"
 
 msgid "common.empty_parenthesized"
 msgstr "(пусто)"
@@ -183,13 +183,13 @@ msgstr "Загрузка…"
 
 msgid "common.n_hours_ago"
 msgid_plural "common.n_hours_ago"
-msgstr[0] "час назад"
+msgstr[0] "{n} час назад"
 msgstr[1] "{n} часа назад"
 msgstr[2] "{n} часов назад"
 
 msgid "common.n_minutes_ago"
 msgid_plural "common.n_minutes_ago"
-msgstr[0] "минуту назад"
+msgstr[0] "{n} минуту назад"
 msgstr[1] "{n} минуты назад"
 msgstr[2] "{n} минут назад"
 
@@ -317,10 +317,10 @@ msgid "dumps.event_kind.logs"
 msgstr "Журналы"
 
 msgid "dumps.event_kind.queries"
-msgstr "Запросы"
+msgstr "SQL-запросы"
 
 msgid "dumps.event_kind.requests"
-msgstr "Запросы"
+msgstr "HTTP-запросы"
 
 msgid "dumps.event_kind.views"
 msgstr "Представления"
@@ -728,7 +728,7 @@ msgid "mail.username_inbox"
 msgstr "MAIL_USERNAME выбирает ящик, поэтому каждый проект получает свой."
 
 msgid "menu.down"
-msgstr "вниз"
+msgstr "не работает"
 
 msgid "menu.dumps"
 msgstr "Дампы"
@@ -1872,13 +1872,13 @@ msgstr[2] "Проверено {n} дней назад"
 
 msgid "versions.checked_n_hours_ago"
 msgid_plural "versions.checked_n_hours_ago"
-msgstr[0] "Проверено час назад"
+msgstr[0] "Проверено {n} час назад"
 msgstr[1] "Проверено {n} часа назад"
 msgstr[2] "Проверено {n} часов назад"
 
 msgid "versions.checked_n_minutes_ago"
 msgid_plural "versions.checked_n_minutes_ago"
-msgstr[0] "Проверено минуту назад"
+msgstr[0] "Проверено {n} минуту назад"
 msgstr[1] "Проверено {n} минуты назад"
 msgstr[2] "Проверено {n} минут назад"
 
